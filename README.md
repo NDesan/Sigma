@@ -3,24 +3,54 @@
 Mini coach avatar façon Duolingo : points, streaks, niveaux, notifications
 de motivation, et chat avec un coach (IA branchable).
 
-## 🚀 Démarrage rapide
+## 🚀 Démarrage rapide (Android déjà configuré)
 
-Prérequis : [Flutter SDK](https://docs.flutter.dev/get-started/install) installé,
-un émulateur Android ou un téléphone en mode debug USB.
+Le dossier `android/` est déjà entièrement configuré : Gradle, permissions,
+icônes, manifest. Il ne te manque que le SDK Flutter installé sur ta machine.
+
+Prérequis : [Flutter SDK](https://docs.flutter.dev/get-started/install),
+un émulateur Android (ou un téléphone en mode debug USB avec le
+débogage USB activé).
 
 ```bash
+cd coach_app
 flutter pub get
 flutter run
 ```
 
-Si tu n'as pas encore de projet Android généré (dossier `android/` absent),
-lance d'abord :
+La première fois, Android Studio / Flutter va générer automatiquement un
+fichier `android/local.properties` avec les chemins vers ton SDK Android et
+Flutter — tu n'as rien à faire, c'est automatique au premier `flutter run`
+ou à la première ouverture dans Android Studio.
+
+### Générer un APK ou un App Bundle
 
 ```bash
-flutter create .
+flutter build apk --release        # APK unique, pratique pour tester
+flutter build appbundle --release  # format requis pour le Play Store
 ```
-à la racine de `coach_app` — cela régénère les dossiers `android/`, `ios/`,
-etc. sans toucher au code Dart déjà présent dans `lib/`.
+
+### ⚠️ Avant de publier sur le Play Store
+
+1. Change `applicationId` dans `android/app/build.gradle` (actuellement
+   `com.example.coach_app`, à remplacer par ton propre identifiant,
+   ex: `com.tonstudio.moncoach`) — et renomme le dossier
+   `android/app/src/main/kotlin/com/example/coach_app/` en conséquence.
+2. Configure une vraie clé de signature (`signingConfigs`) au lieu de la
+   config debug utilisée par défaut dans `buildTypes.release`.
+3. Remplace les icônes générées automatiquement (`mipmap-*/ic_launcher.png`)
+   par ton propre design — idéalement via
+   [flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons).
+
+### Permissions déjà configurées dans `AndroidManifest.xml`
+- `POST_NOTIFICATIONS` (Android 13+, demandée au runtime automatiquement)
+- `SCHEDULE_EXACT_ALARM` pour les rappels quotidiens à heure fixe
+- `RECEIVE_BOOT_COMPLETED` pour que les rappels survivent à un redémarrage
+- `INTERNET` pour le chat avec le coach (si tu branches une API distante)
+
+Sur Android 12+, si l'utilisateur refuse ou révoque les alarmes exactes,
+le système peut demander de l'activer manuellement dans
+**Paramètres > Apps > Mon Coach > Alarmes et rappels**.
 
 ## 📁 Structure du projet
 
