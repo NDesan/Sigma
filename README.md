@@ -9,7 +9,6 @@ Prérequis : [Flutter SDK](https://docs.flutter.dev/get-started/install) install
 un émulateur Android ou un téléphone en mode debug USB.
 
 ```bash
-cd coach_app
 flutter pub get
 flutter run
 ```
