@@ -1,0 +1,182 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/coach_message.dart';
+import '../services/ai_coach_service.dart';
+import '../services/points_service.dart';
+import '../widgets/avatar_widget.dart';
+
+class ChatScreen extends StatefulWidget {
+  const ChatScreen({super.key});
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  final _aiService = AiCoachService(); // mode local par défaut
+  final _controller = TextEditingController();
+  final _scrollController = ScrollController();
+  final List<CoachMessage> _messages = [];
+  bool _isTyping = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Message d'accueil du coach au premier affichage
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final profile = context.read<PointsService>().profile;
+      setState(() {
+        _messages.add(CoachMessage(
+          text: _aiService.greeting(profile),
+          sender: MessageSender.coach,
+        ));
+      });
+    });
+  }
+
+  Future<void> _send() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    final pointsService = context.read<PointsService>();
+
+    setState(() {
+      _messages.add(CoachMessage(text: text, sender: MessageSender.user));
+      _isTyping = true;
+      _controller.clear();
+    });
+    _scrollToBottom();
+
+    final reply = await _aiService.respond(text, pointsService.profile);
+
+    // petite récompense pour l'engagement dans le chat
+    await pointsService.addPoints(2);
+
+    if (!mounted) return;
+    setState(() {
+      _messages.add(CoachMessage(text: reply, sender: MessageSender.coach));
+      _isTyping = false;
+    });
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent + 80,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        const AvatarWidget(mood: AvatarMood.happy, size: 80),
+        const SizedBox(height: 8),
+        const Text('Ton coach', style: TextStyle(fontWeight: FontWeight.bold)),
+        Expanded(
+          child: ListView.builder(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(16),
+            itemCount: _messages.length + (_isTyping ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (index == _messages.length) {
+                return const _TypingBubble();
+              }
+              final message = _messages[index];
+              return _MessageBubble(message: message);
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  decoration: InputDecoration(
+                    hintText: 'Écris à ton coach...',
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  ),
+                  onSubmitted: (_) => _send(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                onPressed: _send,
+                icon: const Icon(Icons.send),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MessageBubble extends StatelessWidget {
+  final CoachMessage message;
+
+  const _MessageBubble({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final isUser = message.sender == MessageSender.user;
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75),
+        decoration: BoxDecoration(
+          color: isUser ? Colors.deepPurpleAccent : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          message.text,
+          style: TextStyle(color: isUser ? Colors.white : Colors.black87),
+        ),
+      ),
+    );
+  }
+}
+
+class _TypingBubble extends StatelessWidget {
+  const _TypingBubble();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const SizedBox(
+          width: 24,
+          height: 12,
+          child: Center(
+            child: Text('...', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ),
+    );
+  }
+}
