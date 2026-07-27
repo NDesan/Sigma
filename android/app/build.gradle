@@ -41,7 +41,7 @@ android {
     defaultConfig {
         // Identifiant unique de l'app (change-le avant publication sur le Play Store)
         applicationId = "com.example.coach_app"
-        minSdk = 23
+        minSdkVersion = flutter.minSdkVersion
         targetSdk = 34
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName
