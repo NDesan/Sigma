@@ -3,6 +3,7 @@ ios/
 linux/
 macos/
 web/
+**/ephemeral/
 
 # Flutter
 .dart_tool/
