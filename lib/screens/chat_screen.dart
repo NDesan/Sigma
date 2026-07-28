@@ -14,7 +14,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final _aiService = AiCoachService(); // mode local par défaut
+  late final AiCoachService _aiService;
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final List<CoachMessage> _messages = [];
@@ -23,7 +23,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Message d'accueil du coach au premier affichage
+    _aiService = context.read<AiCoachService>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final profile = context.read<PointsService>().profile;
       setState(() {
@@ -47,9 +47,12 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     _scrollToBottom();
 
-    final reply = await _aiService.respond(text, pointsService.profile);
+    final reply = await _aiService.respond(
+      text,
+      pointsService.profile,
+      history: _messages.sublist(0, _messages.length - 1),
+    );
 
-    // petite récompense pour l'engagement dans le chat
     await pointsService.addPoints(2);
 
     if (!mounted) return;

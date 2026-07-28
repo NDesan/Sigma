@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
+import '../models/coach_message.dart';
 import '../models/user_profile.dart';
 import '../models/workout.dart';
 
@@ -121,10 +122,11 @@ class AiCoachService {
   }
 
   /// Interactive Coach Chat Response
-  Future<String> respond(String userMessage, UserProfile profile) async {
+  Future<String> respond(String userMessage, UserProfile profile,
+      {List<CoachMessage> history = const []}) async {
     if (useRemoteApi && apiUrl != null) {
       try {
-        return await _respondViaApi(userMessage, profile);
+        return await _respondViaApi(userMessage, profile, history);
       } catch (_) {
         return _localResponse(userMessage, profile);
       }
@@ -148,25 +150,31 @@ class AiCoachService {
     return "Less talking, more lifting. Go log your sets and show me numbers!";
   }
 
-  Future<String> _respondViaApi(String userMessage, UserProfile profile) async {
+  Future<String> _respondViaApi(String userMessage, UserProfile profile,
+      List<CoachMessage> history) async {
+    final messages = [
+      {
+        'role': 'system',
+        'content':
+            'You are a brutally honest, harsh, demanding, but effective AI Fitness Coach. '
+            'User: ${profile.name}, Goal: ${profile.goal}. '
+            'Be blunt, call out weak excuses, but demand excellence. Do not use corporate fluffy language.'
+      },
+      for (final m in history)
+        {
+          'role': m.sender == MessageSender.user ? 'user' : 'assistant',
+          'content': m.text,
+        },
+      {'role': 'user', 'content': userMessage},
+    ];
+
     final response = await http.post(
       Uri.parse(apiUrl!),
       headers: {
         'Content-Type': 'application/json',
         if (apiKey != null) 'Authorization': 'Bearer $apiKey',
       },
-      body: jsonEncode({
-        'messages': [
-          {
-            'role': 'system',
-            'content':
-                'You are a brutally honest, harsh, demanding, but effective AI Fitness Coach. '
-                'User: ${profile.name}, Goal: ${profile.goal}. '
-                'Be blunt, call out weak excuses, but demand excellence. Do not use corporate fluffy language.'
-          },
-          {'role': 'user', 'content': userMessage},
-        ],
-      }),
+      body: jsonEncode({'messages': messages}),
     );
 
     if (response.statusCode == 200) {

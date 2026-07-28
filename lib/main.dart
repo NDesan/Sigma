@@ -23,7 +23,11 @@ Future<void> main() async {
   final workoutService = WorkoutService();
   await workoutService.load();
 
-  final aiCoachService = AiCoachService();
+  final aiCoachService = AiCoachService(
+    useRemoteApi: true,
+    apiUrl: 'http://10.0.2.2:8000/coach', // Android emulator
+    // apiUrl: 'http://localhost:8000/coach', // iOS simulator / web
+  );
 
   runApp(CoachApp(
     pointsService: pointsService,

@@ -27,3 +27,14 @@ android/app/release/
 
 # macOS
 .DS_Store
+
+# Environment (API keys, secrets)
+.env
+
+# Python virtual environment
+venv/
+AI/venv/
+
+# Python cache
+__pycache__/
+*.pyc
