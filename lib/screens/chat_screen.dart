@@ -78,14 +78,43 @@ class _ChatScreenState extends State<ChatScreen> {
 
     return Column(
       children: [
-        const SizedBox(height: 12),
-        AvatarWidget(config: avatarConfig, mood: AvatarMood.happy, size: 80),
-        const SizedBox(height: 8),
-        const Text('Ton coach', style: TextStyle(fontWeight: FontWeight.bold)),
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.45),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              AvatarWidget(config: avatarConfig, mood: AvatarMood.happy, size: 60),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ton coach',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      'Prêt à te motiver à petit pas',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         Expanded(
           child: ListView.builder(
             controller: _scrollController,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             itemCount: _messages.length + (_isTyping ? 1 : 0),
             itemBuilder: (context, index) {
               if (index == _messages.length) {
@@ -96,7 +125,7 @@ class _ChatScreenState extends State<ChatScreen> {
             },
           ),
         ),
-        Padding(
+        Container(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
           child: Row(
             children: [
@@ -111,8 +140,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,
                     ),
-                    contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                   ),
                   onSubmitted: (_) => _send(),
                 ),
