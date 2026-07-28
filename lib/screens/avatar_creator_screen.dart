@@ -13,15 +13,27 @@ class AvatarCreatorScreen extends StatelessWidget {
     final config = avatarService.config;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Personnalise ton coach')),
+      appBar: AppBar(
+        title: const Text('Personnalise ton coach'),
+        centerTitle: true,
+      ),
       body: Column(
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primaryContainer,
+                  Theme.of(context).colorScheme.secondaryContainer,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
             child: Center(
-              child: AvatarWidget(config: config, size: 160),
+              child: AvatarWidget(config: config, size: 170),
             ),
           ),
           Expanded(
