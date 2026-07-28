@@ -15,7 +15,6 @@ class MiiAvatarPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final center = Offset(w / 2, h / 2);
     final headRadius = w * 0.36;
     final headCenter = Offset(w / 2, h * 0.48);
 
@@ -353,8 +352,6 @@ class MiiAvatarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant MiiAvatarPainter oldDelegate) {
-    // La config est mutée en place par AvatarService, donc on ne peut pas
-    // se fier à une comparaison de référence : on repaint systématiquement.
     return true;
   }
 }

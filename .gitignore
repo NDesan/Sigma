@@ -1,3 +1,10 @@
+# Build: ignore everything but Android and Windows
+ios/
+linux/
+macos/
+web/
+**/ephemeral/
+
 # Flutter
 .dart_tool/
 .packages
