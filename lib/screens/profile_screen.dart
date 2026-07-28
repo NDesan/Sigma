@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/points_service.dart';
+import '../services/avatar_service.dart';
+import '../widgets/avatar_widget.dart';
+import 'avatar_creator_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -31,14 +34,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final pointsService = context.watch<PointsService>();
+    final avatarConfig = context.watch<AvatarService>().config;
 
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Ton profil',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 20),
+          Center(
+            child: Column(
+              children: [
+                AvatarWidget(config: avatarConfig, size: 120, animate: false),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const AvatarCreatorScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.face_retouching_natural),
+                  label: const Text('Personnaliser mon coach'),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 24),
           const Text('Prénom / pseudo'),
           const SizedBox(height: 6),

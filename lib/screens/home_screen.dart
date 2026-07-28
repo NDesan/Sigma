@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/points_service.dart';
+import '../services/avatar_service.dart';
 import '../services/notification_service.dart';
 import '../widgets/avatar_widget.dart';
 import '../widgets/points_bar.dart';
@@ -56,6 +57,7 @@ class _CoachHomeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pointsService = context.watch<PointsService>();
+    final avatarConfig = context.watch<AvatarService>().config;
     final profile = pointsService.profile;
 
     final mood = profile.streakDays >= 3
@@ -84,7 +86,7 @@ class _CoachHomeTab extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const Spacer(),
-          AvatarWidget(mood: mood, size: 180),
+          AvatarWidget(config: avatarConfig, mood: mood, size: 180),
           const Spacer(),
           SizedBox(
             width: double.infinity,

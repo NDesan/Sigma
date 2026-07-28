@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/coach_message.dart';
 import '../services/ai_coach_service.dart';
 import '../services/points_service.dart';
+import '../services/avatar_service.dart';
 import '../widgets/avatar_widget.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -73,10 +74,12 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final avatarConfig = context.watch<AvatarService>().config;
+
     return Column(
       children: [
         const SizedBox(height: 12),
-        const AvatarWidget(mood: AvatarMood.happy, size: 80),
+        AvatarWidget(config: avatarConfig, mood: AvatarMood.happy, size: 80),
         const SizedBox(height: 8),
         const Text('Ton coach', style: TextStyle(fontWeight: FontWeight.bold)),
         Expanded(
