@@ -12,6 +12,7 @@ import 'chat_screen.dart';
 import 'progress_screen.dart';
 import 'profile_screen.dart';
 import 'workout_log_screen.dart';
+import 'history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final NotificationService notificationService;
@@ -130,10 +131,17 @@ class _CoachHomeTab extends StatelessWidget {
                         ),
                       );
                     },
-                    icon: const Icon(Icons.fitness_center_rounded, color: Colors.white),
-                    label: const Text(
-                      "LOG WORKOUT 🏋️",
-                      style: TextStyle(
+                    icon: Icon(
+                      workoutService.hasActiveSession
+                          ? Icons.play_arrow_rounded
+                          : Icons.fitness_center_rounded,
+                      color: Colors.white,
+                    ),
+                    label: Text(
+                      workoutService.hasActiveSession
+                          ? "RESUME WORKOUT"
+                          : "LOG WORKOUT 🏋️",
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         letterSpacing: 1.1,
@@ -141,7 +149,9 @@ class _CoachHomeTab extends StatelessWidget {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurpleAccent,
+                      backgroundColor: workoutService.hasActiveSession
+                          ? Colors.orange
+                          : Colors.deepPurpleAccent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
@@ -150,6 +160,29 @@ class _CoachHomeTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 14),
+
+                // History Button
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (ctx) => const HistoryScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.history),
+                    label: const Text("Workout History"),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
 
                 // Secondary Quick Check-in Button
                 SizedBox(

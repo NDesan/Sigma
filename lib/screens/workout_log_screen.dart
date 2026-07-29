@@ -4,6 +4,7 @@ import '../models/workout.dart';
 import '../services/workout_service.dart';
 import '../services/ai_coach_service.dart';
 import '../widgets/coach_reaction_dialog.dart';
+import '../widgets/rest_timer_sheet.dart';
 
 class WorkoutLogScreen extends StatefulWidget {
   final AiCoachService aiCoachService;
@@ -19,6 +20,7 @@ class WorkoutLogScreen extends StatefulWidget {
 
 class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
   final List<_ExerciseDraft> _exercises = [];
+  final TextEditingController _customExerciseController = TextEditingController();
 
   final List<String> _commonExercises = [
     'Bench Press',
@@ -31,75 +33,156 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
     'Dips',
   ];
 
+  DateTime? _startTime;
+
   @override
   void initState() {
     super.initState();
-    _addDefaultExercise();
+    _loadDraft();
   }
 
-  void _addDefaultExercise() {
-    setState(() {
-      _exercises.add(_ExerciseDraft(
-        nameController: TextEditingController(text: 'Bench Press'),
-        sets: [
-          _SetDraft(weightController: TextEditingController(text: '60'), repsController: TextEditingController(text: '10')),
-          _SetDraft(weightController: TextEditingController(text: '60'), repsController: TextEditingController(text: '10')),
-          _SetDraft(weightController: TextEditingController(text: '60'), repsController: TextEditingController(text: '8')),
-        ],
-      ));
-    });
+  @override
+  void dispose() {
+    _customExerciseController.dispose();
+    for (final ex in _exercises) {
+      ex.nameController.dispose();
+      for (final s in ex.sets) {
+        s.weightController.dispose();
+        s.repsController.dispose();
+        s.notesController.dispose();
+      }
+    }
+    super.dispose();
   }
 
-  void _addNewExercise(String name) {
-    setState(() {
-      _exercises.add(_ExerciseDraft(
-        nameController: TextEditingController(text: name),
-        sets: [
-          _SetDraft(weightController: TextEditingController(text: '50'), repsController: TextEditingController(text: '10')),
-        ],
-      ));
-    });
+  void _loadDraft() {
+    final workoutService = context.read<WorkoutService>();
+    if (workoutService.hasActiveSession) {
+      final session = workoutService.activeSession!;
+      _startTime = session.dateTime;
+      for (final entry in session.exercises) {
+        final exDraft = _ExerciseDraft(
+          nameController: TextEditingController(text: entry.exerciseName),
+          sets: entry.sets
+              .map((set) => _SetDraft(
+                    weightController:
+                        TextEditingController(text: set.weightKg.toString()),
+                    repsController:
+                        TextEditingController(text: set.reps.toString()),
+                    notesController:
+                        TextEditingController(text: set.notes ?? ''),
+                  ))
+              .toList(),
+        );
+        _exercises.add(exDraft);
+      }
+    } else {
+      workoutService.startNewSession();
+      _startTime = workoutService.activeSession!.dateTime;
+    }
   }
 
-  Future<void> _submitWorkout() async {
-    if (_exercises.isEmpty) return;
+  Future<void> _saveDraft() async {
+    final entries = _buildExerciseEntries();
+    await context.read<WorkoutService>().updateActiveSessionExercises(entries);
+  }
 
-    final List<ExerciseEntry> exerciseEntries = [];
-
+  List<ExerciseEntry> _buildExerciseEntries() {
+    final entries = <ExerciseEntry>[];
     for (final draft in _exercises) {
       final name = draft.nameController.text.trim();
       if (name.isEmpty) continue;
-
-      final List<WorkoutSet> sets = [];
+      final sets = <WorkoutSet>[];
       for (final s in draft.sets) {
         final weight = double.tryParse(s.weightController.text) ?? 0.0;
         final reps = int.tryParse(s.repsController.text) ?? 0;
         if (reps > 0) {
-          sets.add(WorkoutSet(weightKg: weight, reps: reps));
+          sets.add(WorkoutSet(
+            weightKg: weight,
+            reps: reps,
+            notes: s.notesController.text.trim().isEmpty
+                ? null
+                : s.notesController.text.trim(),
+          ));
         }
       }
-
       if (sets.isNotEmpty) {
-        exerciseEntries.add(ExerciseEntry(exerciseName: name, sets: sets));
+        entries.add(ExerciseEntry(exerciseName: name, sets: sets));
       }
     }
+    return entries;
+  }
 
-    if (exerciseEntries.isEmpty) {
+  void _addQuickExercise(String name) {
+    setState(() {
+      _exercises.add(_ExerciseDraft(
+        nameController: TextEditingController(text: name),
+        sets: [
+          _SetDraft(
+            weightController: TextEditingController(text: ''),
+            repsController: TextEditingController(text: ''),
+            notesController: TextEditingController(),
+          ),
+        ],
+      ));
+    });
+  }
+
+  void _addCustomExercise() {
+    final name = _customExerciseController.text.trim();
+    if (name.isEmpty) return;
+    _addQuickExercise(name);
+    _customExerciseController.clear();
+  }
+
+  void _addSet(_ExerciseDraft exercise) {
+    setState(() {
+      final lastSet = exercise.sets.isNotEmpty ? exercise.sets.last : null;
+      exercise.sets.add(_SetDraft(
+        weightController:
+            TextEditingController(text: lastSet?.weightController.text ?? ''),
+        repsController:
+            TextEditingController(text: lastSet?.repsController.text ?? ''),
+        notesController: TextEditingController(),
+      ));
+    });
+  }
+
+  void _showRestTimer() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E2C),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => const RestTimerSheet(),
+    );
+  }
+
+  Future<void> _endWorkout() async {
+    final entries = _buildExerciseEntries();
+    if (entries.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Add at least one valid set with reps > 0!")),
+        const SnackBar(
+            content: Text(
+                "Add at least one exercise with valid reps before ending.")),
       );
       return;
     }
 
-    final session = WorkoutSession(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      dateTime: DateTime.now(),
-      exercises: exerciseEntries,
-    );
+    final endTime = DateTime.now();
+    final workoutService = context.read<WorkoutService>();
 
-    final workoutService = Provider.of<WorkoutService>(context, listen: false);
-    final comparisonResults = await workoutService.saveSession(session);
-    final harshFeedback = widget.aiCoachService.generateWorkoutFeedback(comparisonResults);
+    await _saveDraft();
+    final session = await workoutService.endActiveSession(endTime: endTime);
+
+    final comparisonResults = session.exercises
+        .map((e) => workoutService.compareExercise(
+            e, beforeDate: session.dateTime))
+        .toList();
+    final harshFeedback =
+        widget.aiCoachService.generateWorkoutFeedback(comparisonResults);
 
     if (!mounted) return;
 
@@ -110,218 +193,366 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
         comparisonResults: comparisonResults,
         coachFeedbackText: harshFeedback,
         onClose: () {
-          Navigator.of(context).pop(); // Exit workout log screen
+          Navigator.of(context).pop();
         },
       ),
     );
   }
 
+  String _formatDateTime(DateTime dt) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    const days = [
+      'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
+    ];
+    final hour = dt.hour > 12
+        ? dt.hour - 12
+        : (dt.hour == 0 ? 12 : dt.hour);
+    final amPm = dt.hour >= 12 ? 'PM' : 'AM';
+    final min = dt.minute.toString().padLeft(2, '0');
+    return '${days[dt.weekday - 1]}, ${months[dt.month - 1]} ${dt.day} · $hour:$min $amPm';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF12121D),
-      appBar: AppBar(
-        title: const Text(
-          "LOG WORKOUT",
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        await _saveDraft();
+        if (context.mounted) Navigator.of(context).pop();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF12121D),
+        appBar: AppBar(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "WORKOUT",
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                    fontSize: 18),
+              ),
+              if (_startTime != null)
+                Text(
+                  _formatDateTime(_startTime!),
+                  style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.normal),
+                ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF1E1E2C),
+          foregroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.timer_outlined),
+              tooltip: 'Rest Timer',
+              onPressed: _showRestTimer,
+            ),
+          ],
         ),
-        backgroundColor: const Color(0xFF1E1E2C),
-        foregroundColor: Colors.white,
-        elevation: 0,
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "QUICK ADD EXERCISE",
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _commonExercises.map((exName) {
+                  return ActionChip(
+                    label: Text(exName),
+                    backgroundColor: const Color(0xFF1E1E2C),
+                    labelStyle: const TextStyle(
+                        color: Colors.deepPurpleAccent, fontSize: 12),
+                    onPressed: () => _addQuickExercise(exName),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _customExerciseController,
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: "Custom exercise name...",
+                        hintStyle: const TextStyle(color: Colors.grey),
+                        filled: true,
+                        fillColor: const Color(0xFF1E1E2C),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                      onSubmitted: (_) => _addCustomExercise(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    onPressed: _addCustomExercise,
+                    icon: const Icon(Icons.add),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.deepPurpleAccent,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _exercises.length,
+                itemBuilder: (context, exIndex) {
+                  final ex = _exercises[exIndex];
+                  return _buildExerciseCard(ex, exIndex);
+                },
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurpleAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: _endWorkout,
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text(
+                    "END WORKOUT",
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold, letterSpacing: 1.1),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+            ],
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
+    );
+  }
+
+  Widget _buildExerciseCard(_ExerciseDraft ex, int exIndex) {
+    return Card(
+      color: const Color(0xFF1E1E2C),
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Exercise Chips selection shortcut
-            const Text(
-              "QUICK ADD EXERCISE",
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.1,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _commonExercises.map((exName) {
-                return ActionChip(
-                  label: Text(exName),
-                  backgroundColor: const Color(0xFF1E1E2C),
-                  labelStyle: const TextStyle(color: Colors.deepPurpleAccent, fontSize: 12),
-                  onPressed: () => _addNewExercise(exName),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-
-            // Exercise Draft Cards List
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _exercises.length,
-              itemBuilder: (context, exIndex) {
-                final ex = _exercises[exIndex];
-                return Card(
-                  color: const Color(0xFF1E1E2C),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: ex.nameController,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
-                                decoration: const InputDecoration(
-                                  hintText: "Exercise Name",
-                                  hintStyle: TextStyle(color: Colors.grey),
-                                  border: InputBorder.none,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                              onPressed: () {
-                                setState(() {
-                                  _exercises.removeAt(exIndex);
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                        const Divider(color: Colors.white10),
-
-                        // Sets Header
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 4.0),
-                          child: Row(
-                            children: [
-                              SizedBox(width: 40, child: Text("SET", style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold))),
-                              Expanded(child: Text("KG", style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold))),
-                              Expanded(child: Text("REPS", style: TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold))),
-                              SizedBox(width: 40),
-                            ],
-                          ),
-                        ),
-
-                        // Sets list
-                        Column(
-                          children: List.generate(ex.sets.length, (setIndex) {
-                            final setDraft = ex.sets[setIndex];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0),
-                              child: Row(
-                                children: [
-                                  SizedBox(
-                                    width: 40,
-                                    child: Text(
-                                      "#${setIndex + 1}",
-                                      style: const TextStyle(color: Colors.deepPurpleAccent, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: setDraft.weightController,
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                      style: const TextStyle(color: Colors.white),
-                                      decoration: InputDecoration(
-                                        filled: true,
-                                        fillColor: Colors.black26,
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: TextField(
-                                      controller: setDraft.repsController,
-                                      keyboardType: TextInputType.number,
-                                      style: const TextStyle(color: Colors.white),
-                                      decoration: InputDecoration(
-                                        filled: true,
-                                        fillColor: Colors.black26,
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(
-                                    width: 40,
-                                    child: IconButton(
-                                      icon: const Icon(Icons.close, color: Colors.grey, size: 18),
-                                      onPressed: () {
-                                        setState(() {
-                                          ex.sets.removeAt(setIndex);
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Add Set button
-                        TextButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              final lastSet = ex.sets.isNotEmpty ? ex.sets.last : null;
-                              ex.sets.add(_SetDraft(
-                                weightController: TextEditingController(text: lastSet?.weightController.text ?? '50'),
-                                repsController: TextEditingController(text: lastSet?.repsController.text ?? '10'),
-                              ));
-                            });
-                          },
-                          icon: const Icon(Icons.add, size: 16),
-                          label: const Text("ADD SET"),
-                          style: TextButton.styleFrom(foregroundColor: Colors.deepPurpleAccent),
-                        ),
-                      ],
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: ex.nameController,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: "Exercise Name",
+                      hintStyle: TextStyle(color: Colors.grey),
+                      border: InputBorder.none,
                     ),
                   ),
-                );
-              },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline,
+                      color: Colors.redAccent),
+                  onPressed: () {
+                    setState(() {
+                      _exercises.removeAt(exIndex);
+                    });
+                  },
+                ),
+              ],
             ),
-
-            const SizedBox(height: 20),
-
-            // Submit Workout Button
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurpleAccent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: _submitWorkout,
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text(
-                  "FINISH & GET COACH FEEDBACK",
-                  style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1),
-                ),
+            const Divider(color: Colors.white10),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4.0),
+              child: Row(
+                children: [
+                  SizedBox(
+                      width: 32,
+                      child: Text("SET",
+                          style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold))),
+                  Expanded(
+                      flex: 2,
+                      child: Text("KG",
+                          style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold))),
+                  Expanded(
+                      flex: 2,
+                      child: Text("REPS",
+                          style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold))),
+                  Expanded(
+                      flex: 3,
+                      child: Text("NOTES",
+                          style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold))),
+                  SizedBox(width: 32),
+                ],
               ),
             ),
-            const SizedBox(height: 30),
+            Column(
+              children: List.generate(ex.sets.length, (setIndex) {
+                final setDraft = ex.sets[setIndex];
+                return _buildSetRow(ex, setDraft, setIndex);
+              }),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () => _addSet(ex),
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text("ADD SET"),
+                  style: TextButton.styleFrom(
+                      foregroundColor: Colors.deepPurpleAccent),
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _showRestTimer,
+                  icon: const Icon(Icons.timer_outlined, size: 16),
+                  label: const Text("REST"),
+                  style:
+                      TextButton.styleFrom(foregroundColor: Colors.grey),
+                ),
+              ],
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSetRow(
+      _ExerciseDraft ex, _SetDraft setDraft, int setIndex) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 32,
+            child: Text(
+              "#${setIndex + 1}",
+              style: const TextStyle(
+                  color: Colors.deepPurpleAccent,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13),
+            ),
+          ),
+          Expanded(
+            flex: 2,
+            child: TextField(
+              controller: setDraft.weightController,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.black26,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide.none),
+                isDense: true,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            flex: 2,
+            child: TextField(
+              controller: setDraft.repsController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.black26,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide.none),
+                isDense: true,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            flex: 3,
+            child: TextField(
+              controller: setDraft.notesController,
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              decoration: InputDecoration(
+                hintText: "Optional",
+                hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+                filled: true,
+                fillColor: Colors.black26,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    borderSide: BorderSide.none),
+                isDense: true,
+              ),
+            ),
+          ),
+          SizedBox(
+            width: 32,
+            child: IconButton(
+              icon: const Icon(Icons.close, color: Colors.grey, size: 16),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                setState(() {
+                  ex.sets.removeAt(setIndex);
+                });
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -340,9 +571,11 @@ class _ExerciseDraft {
 class _SetDraft {
   final TextEditingController weightController;
   final TextEditingController repsController;
+  final TextEditingController notesController;
 
   _SetDraft({
     required this.weightController,
     required this.repsController,
+    required this.notesController,
   });
 }
