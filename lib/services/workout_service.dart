@@ -5,11 +5,15 @@ import '../models/workout.dart';
 
 class WorkoutService extends ChangeNotifier {
   static const String _storageKey = 'workout_sessions_v1';
+  static const String _activeSessionKey = 'active_workout_session';
 
   List<WorkoutSession> _sessions = [];
+  WorkoutSession? _activeSession;
   bool _isLoaded = false;
 
   List<WorkoutSession> get sessions => List.unmodifiable(_sessions);
+  WorkoutSession? get activeSession => _activeSession;
+  bool get hasActiveSession => _activeSession != null;
   bool get isLoaded => _isLoaded;
 
   Future<void> load() async {
@@ -27,14 +31,93 @@ class WorkoutService extends ChangeNotifier {
         _sessions = [];
       }
     }
+
+    final activeJson = prefs.getString(_activeSessionKey);
+    if (activeJson != null && activeJson.isNotEmpty) {
+      try {
+        _activeSession =
+            WorkoutSession.fromJson(jsonDecode(activeJson) as Map<String, dynamic>);
+      } catch (e) {
+        debugPrint('Error loading active session: $e');
+        _activeSession = null;
+      }
+    }
+
     _isLoaded = true;
     notifyListeners();
   }
 
-  Future<void> _save() async {
+  Future<void> _saveSessions() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonStr = jsonEncode(_sessions.map((s) => s.toJson()).toList());
     await prefs.setString(_storageKey, jsonStr);
+  }
+
+  Future<void> _saveActiveSessionDraft() async {
+    if (_activeSession == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        _activeSessionKey, jsonEncode(_activeSession!.toJson()));
+  }
+
+  Future<void> _clearActiveSessionDraft() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_activeSessionKey);
+  }
+
+  void startNewSession() {
+    _activeSession = WorkoutSession(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      dateTime: DateTime.now(),
+      exercises: [],
+    );
+    _saveActiveSessionDraft();
+    notifyListeners();
+  }
+
+  Future<void> updateActiveSessionExercises(List<ExerciseEntry> exercises) async {
+    if (_activeSession == null) return;
+    _activeSession = WorkoutSession(
+      id: _activeSession!.id,
+      dateTime: _activeSession!.dateTime,
+      exercises: exercises,
+    );
+    await _saveActiveSessionDraft();
+    notifyListeners();
+  }
+
+  Future<WorkoutSession> endActiveSession({required DateTime endTime}) async {
+    if (_activeSession == null) {
+      throw StateError('No active session to end');
+    }
+
+    final completedSession = WorkoutSession(
+      id: _activeSession!.id,
+      dateTime: _activeSession!.dateTime,
+      endTime: endTime,
+      exercises: _activeSession!.exercises,
+    );
+
+    _sessions.insert(0, completedSession);
+    await _saveSessions();
+
+    _activeSession = null;
+    await _clearActiveSessionDraft();
+    notifyListeners();
+
+    return completedSession;
+  }
+
+  void cancelActiveSession() {
+    _activeSession = null;
+    _clearActiveSessionDraft();
+    notifyListeners();
+  }
+
+  Future<void> deleteSession(String sessionId) async {
+    _sessions.removeWhere((s) => s.id == sessionId);
+    await _saveSessions();
+    notifyListeners();
   }
 
   /// Get the most recent exercise entry for a given exercise name before a specified session date
@@ -77,7 +160,6 @@ class WorkoutService extends ChangeNotifier {
     final volumeDeltaPercent = prevVol > 0 ? ((currentVol - prevVol) / prevVol) * 100 : 0.0;
 
     PerformanceStatus status;
-    // Difference higher than +2% volume or +0.5kg max weight is considered improved
     if (volumeDeltaPercent > 2.0 || weightDelta > 0.5) {
       status = PerformanceStatus.improved;
     } else if (volumeDeltaPercent < -2.0 || weightDelta < -0.5) {
@@ -96,13 +178,14 @@ class WorkoutService extends ChangeNotifier {
     );
   }
 
-  /// Save a new workout session and return comparison results for all exercises in the session
+  /// Save a new workout session and return comparison results for all exercises
   Future<List<ExerciseComparisonResult>> saveSession(WorkoutSession session) async {
-    // Generate comparison before adding session to history list
-    final results = session.exercises.map((e) => compareExercise(e, beforeDate: session.dateTime)).toList();
+    final results = session.exercises
+        .map((e) => compareExercise(e, beforeDate: session.dateTime))
+        .toList();
 
     _sessions.insert(0, session);
-    await _save();
+    await _saveSessions();
     notifyListeners();
 
     return results;
