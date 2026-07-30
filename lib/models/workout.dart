@@ -72,12 +72,14 @@ class WorkoutSession {
   final DateTime dateTime;
   final DateTime? endTime;
   final List<ExerciseEntry> exercises;
+  final String? name;
 
   WorkoutSession({
     required this.id,
     required this.dateTime,
     this.endTime,
     required this.exercises,
+    this.name,
   });
 
   Duration? get duration {
@@ -88,11 +90,27 @@ class WorkoutSession {
   double get totalVolume =>
       exercises.fold(0, (sum, ex) => sum + ex.totalVolume);
 
+  WorkoutSession copyWith({
+    String? id,
+    DateTime? dateTime,
+    DateTime? endTime,
+    List<ExerciseEntry>? exercises,
+    String? name,
+  }) =>
+      WorkoutSession(
+        id: id ?? this.id,
+        dateTime: dateTime ?? this.dateTime,
+        endTime: endTime ?? this.endTime,
+        exercises: exercises ?? this.exercises,
+        name: name ?? this.name,
+      );
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'dateTime': dateTime.toIso8601String(),
         if (endTime != null) 'endTime': endTime!.toIso8601String(),
         'exercises': exercises.map((e) => e.toJson()).toList(),
+        if (name != null && name!.isNotEmpty) 'name': name,
       };
 
   factory WorkoutSession.fromJson(Map<String, dynamic> json) => WorkoutSession(
@@ -104,6 +122,7 @@ class WorkoutSession {
         exercises: (json['exercises'] as List)
             .map((e) => ExerciseEntry.fromJson(e as Map<String, dynamic>))
             .toList(),
+        name: json['name'] as String?,
       );
 }
 

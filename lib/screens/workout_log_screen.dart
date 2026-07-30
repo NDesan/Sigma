@@ -21,6 +21,7 @@ class WorkoutLogScreen extends StatefulWidget {
 class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
   final List<_ExerciseDraft> _exercises = [];
   final TextEditingController _customExerciseController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
 
   final List<String> _commonExercises = [
     'Bench Press',
@@ -33,7 +34,8 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
     'Dips',
   ];
 
-  DateTime? _startTime;
+  DateTime _workoutDateTime = DateTime.now();
+  DateTime? _endDateTime;
 
   @override
   void initState() {
@@ -44,6 +46,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
   @override
   void dispose() {
     _customExerciseController.dispose();
+    _nameController.dispose();
     for (final ex in _exercises) {
       ex.nameController.dispose();
       for (final s in ex.sets) {
@@ -59,7 +62,9 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
     final workoutService = context.read<WorkoutService>();
     if (workoutService.hasActiveSession) {
       final session = workoutService.activeSession!;
-      _startTime = session.dateTime;
+      _workoutDateTime = session.dateTime;
+      _endDateTime = session.endTime;
+      _nameController.text = session.name ?? '';
       for (final entry in session.exercises) {
         final exDraft = _ExerciseDraft(
           nameController: TextEditingController(text: entry.exerciseName),
@@ -78,7 +83,78 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
       }
     } else {
       workoutService.startNewSession();
-      _startTime = workoutService.activeSession!.dateTime;
+      _workoutDateTime = workoutService.activeSession!.dateTime;
+    }
+  }
+
+  Future<void> _saveMetadata() async {
+    await context.read<WorkoutService>().updateActiveSessionMetadata(
+      name: _nameController.text.trim().isEmpty
+          ? null
+          : _nameController.text.trim(),
+      dateTime: _workoutDateTime,
+      endTime: _endDateTime,
+    );
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _workoutDateTime,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (picked != null) {
+      setState(() {
+        _workoutDateTime = DateTime(
+          picked.year,
+          picked.month,
+          picked.day,
+          _workoutDateTime.hour,
+          _workoutDateTime.minute,
+        );
+      });
+      _saveMetadata();
+    }
+  }
+
+  Future<void> _pickStartTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_workoutDateTime),
+    );
+    if (picked != null) {
+      setState(() {
+        _workoutDateTime = DateTime(
+          _workoutDateTime.year,
+          _workoutDateTime.month,
+          _workoutDateTime.day,
+          picked.hour,
+          picked.minute,
+        );
+      });
+      _saveMetadata();
+    }
+  }
+
+  Future<void> _pickEndTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _endDateTime != null
+          ? TimeOfDay.fromDateTime(_endDateTime!)
+          : TimeOfDay.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _endDateTime = DateTime(
+          _workoutDateTime.year,
+          _workoutDateTime.month,
+          _workoutDateTime.day,
+          picked.hour,
+          picked.minute,
+        );
+      });
+      _saveMetadata();
     }
   }
 
@@ -171,7 +247,8 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
       return;
     }
 
-    final endTime = DateTime.now();
+    await _saveMetadata();
+    final endTime = _endDateTime ?? DateTime.now();
     final workoutService = context.read<WorkoutService>();
 
     await _saveDraft();
@@ -230,21 +307,22 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "WORKOUT",
-                style: TextStyle(
+              Text(
+                _nameController.text.trim().isEmpty
+                    ? "WORKOUT"
+                    : _nameController.text.trim(),
+                style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.2,
                     fontSize: 18),
               ),
-              if (_startTime != null)
-                Text(
-                  _formatDateTime(_startTime!),
-                  style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.normal),
-                ),
+              Text(
+                _formatDateTime(_workoutDateTime),
+                style: const TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.normal),
+              ),
             ],
           ),
           backgroundColor: const Color(0xFF1E1E2C),
@@ -263,6 +341,8 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              _buildWorkoutMetadataCard(),
+              const SizedBox(height: 20),
               const Text(
                 "QUICK ADD EXERCISE",
                 style: TextStyle(
@@ -356,6 +436,105 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildWorkoutMetadataCard() {
+    return Card(
+      color: const Color(0xFF1E1E2C),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _nameController,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+              decoration: const InputDecoration(
+                hintText: "Workout Name",
+                hintStyle: TextStyle(color: Colors.grey),
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+              ),
+              onChanged: (_) {
+                setState(() {});
+                _saveMetadata();
+              },
+            ),
+            const SizedBox(height: 12),
+            _buildInfoRow(
+              icon: Icons.calendar_today,
+              label: _formatDate(_workoutDateTime),
+              onTap: _pickDate,
+            ),
+            const SizedBox(height: 8),
+            _buildInfoRow(
+              icon: Icons.schedule,
+              label: "Start ${_formatTime(_workoutDateTime)}",
+              onTap: _pickStartTime,
+            ),
+            const SizedBox(height: 8),
+            _buildInfoRow(
+              icon: Icons.timer_outlined,
+              label: _endDateTime != null
+                  ? "End ${_formatTime(_endDateTime!)}"
+                  : "End time (not set)",
+              onTap: _pickEndTime,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.deepPurpleAccent, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+            const Spacer(),
+            const Icon(Icons.edit, color: Colors.grey, size: 14),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime dt) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    const days = [
+      'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
+    ];
+    return '${days[dt.weekday - 1]}, ${months[dt.month - 1]} ${dt.day}, ${dt.year}';
+  }
+
+  String _formatTime(DateTime dt) {
+    final hour = dt.hour > 12
+        ? dt.hour - 12
+        : (dt.hour == 0 ? 12 : dt.hour);
+    final amPm = dt.hour >= 12 ? 'PM' : 'AM';
+    final min = dt.minute.toString().padLeft(2, '0');
+    return '$hour:$min $amPm';
   }
 
   Widget _buildExerciseCard(_ExerciseDraft ex, int exIndex) {

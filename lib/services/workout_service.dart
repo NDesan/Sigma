@@ -65,11 +65,12 @@ class WorkoutService extends ChangeNotifier {
     await prefs.remove(_activeSessionKey);
   }
 
-  void startNewSession() {
+  void startNewSession({String? name, DateTime? dateTime}) {
     _activeSession = WorkoutSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      dateTime: DateTime.now(),
+      dateTime: dateTime ?? DateTime.now(),
       exercises: [],
+      name: name,
     );
     _saveActiveSessionDraft();
     notifyListeners();
@@ -77,10 +78,21 @@ class WorkoutService extends ChangeNotifier {
 
   Future<void> updateActiveSessionExercises(List<ExerciseEntry> exercises) async {
     if (_activeSession == null) return;
-    _activeSession = WorkoutSession(
-      id: _activeSession!.id,
-      dateTime: _activeSession!.dateTime,
-      exercises: exercises,
+    _activeSession = _activeSession!.copyWith(exercises: exercises);
+    await _saveActiveSessionDraft();
+    notifyListeners();
+  }
+
+  Future<void> updateActiveSessionMetadata({
+    String? name,
+    DateTime? dateTime,
+    DateTime? endTime,
+  }) async {
+    if (_activeSession == null) return;
+    _activeSession = _activeSession!.copyWith(
+      name: name,
+      dateTime: dateTime,
+      endTime: endTime,
     );
     await _saveActiveSessionDraft();
     notifyListeners();
