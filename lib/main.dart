@@ -25,8 +25,8 @@ Future<void> main() async {
 
   final aiCoachService = AiCoachService(
     useRemoteApi: true,
-    apiUrl: 'http://10.0.2.2:8000/coach', // Android emulator
-    // apiUrl: 'http://localhost:8000/coach', // iOS simulator / web
+    apiUrl: 'https://api.mistral.ai/v1/chat/completions',
+    apiKey: 'YOUR_MISTRAL_API_KEY',
   );
 
   runApp(CoachApp(

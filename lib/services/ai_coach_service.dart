@@ -174,12 +174,16 @@ class AiCoachService {
         'Content-Type': 'application/json',
         if (apiKey != null) 'Authorization': 'Bearer $apiKey',
       },
-      body: jsonEncode({'messages': messages}),
+      body: jsonEncode({
+        'model': 'ministral-3b-latest',
+        'messages': messages,
+      }),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['reply'] ?? _localResponse(userMessage, profile);
+      return data['choices']?[0]?['message']?['content']
+          ?? _localResponse(userMessage, profile);
     }
     throw Exception('API error: ${response.statusCode}');
   }
