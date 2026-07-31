@@ -6,6 +6,7 @@ import 'services/points_service.dart';
 import 'services/avatar_service.dart';
 import 'services/notification_service.dart';
 import 'services/translation_service.dart';
+import 'services/coach_settings_service.dart';
 import 'screens/home_screen.dart';
 
 import 'services/workout_service.dart';
@@ -37,6 +38,9 @@ Future<void> main() async {
     apiKey: dotenv.env['MISTRAL_API_KEY'] ?? '',
   );
 
+  final coachSettingsService = CoachSettingsService();
+  await coachSettingsService.load();
+
   runApp(CoachApp(
     translationService: translationService,
     pointsService: pointsService,
@@ -44,6 +48,7 @@ Future<void> main() async {
     workoutService: workoutService,
     aiCoachService: aiCoachService,
     notificationService: notificationService,
+    coachSettingsService: coachSettingsService,
   ));
 }
 
@@ -54,6 +59,7 @@ class CoachApp extends StatelessWidget {
   final WorkoutService workoutService;
   final AiCoachService aiCoachService;
   final NotificationService notificationService;
+  final CoachSettingsService coachSettingsService;
 
   const CoachApp({
     super.key,
@@ -63,6 +69,7 @@ class CoachApp extends StatelessWidget {
     required this.workoutService,
     required this.aiCoachService,
     required this.notificationService,
+    required this.coachSettingsService,
   });
 
   @override
@@ -73,6 +80,7 @@ class CoachApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: pointsService),
         ChangeNotifierProvider.value(value: avatarService),
         ChangeNotifierProvider.value(value: workoutService),
+        ChangeNotifierProvider.value(value: coachSettingsService),
         Provider.value(value: aiCoachService),
       ],
       child: Consumer<TranslationService>(

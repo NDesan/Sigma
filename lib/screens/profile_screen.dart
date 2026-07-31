@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/points_service.dart';
 import '../services/avatar_service.dart';
+import '../services/coach_settings_service.dart';
 import '../services/translation_service.dart';
 import '../services/tr.dart';
 import '../widgets/avatar_widget.dart';
@@ -119,6 +120,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onSelected: (_) => ts.setLocale(l.$1),
                   );
                 }).toList(),
+              );
+            },
+          ),
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 8),
+          Text(context.tr('coachPersonality'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(context.tr('personalityDescription'),
+              style: TextStyle(color: Theme.of(context).colorScheme.outline)),
+          const SizedBox(height: 12),
+          Consumer<CoachSettingsService>(
+            builder: (context, settings, _) {
+              final labels = {
+                CoachPersonality.gentle: context.tr('gentle'),
+                CoachPersonality.balanced: context.tr('balanced'),
+                CoachPersonality.aggressive: context.tr('aggressive'),
+                CoachPersonality.brutal: context.tr('brutal'),
+              };
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.sentiment_very_satisfied, size: 20),
+                      Expanded(
+                        child: Slider(
+                          value: settings.aggressiveness,
+                          divisions: 3,
+                          onChanged: (value) =>
+                              settings.setAggressiveness(value),
+                        ),
+                      ),
+                      const Icon(Icons.local_fire_department, size: 20),
+                    ],
+                  ),
+                  Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      labels[settings.personality] ?? '',
+                      style: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
               );
             },
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/coach_message.dart';
 import '../services/ai_coach_service.dart';
+import '../services/coach_settings_service.dart';
 import '../services/tr.dart';
 import '../services/points_service.dart';
 import '../services/avatar_service.dart';
@@ -27,9 +28,11 @@ class _ChatScreenState extends State<ChatScreen> {
     _aiService = context.read<AiCoachService>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final profile = context.read<PointsService>().profile;
+      final settings = context.read<CoachSettingsService>();
       setState(() {
         _messages.add(CoachMessage(
-          text: _aiService.greeting(profile),
+          text: _aiService.greeting(profile,
+              personality: settings.personality),
           sender: MessageSender.coach,
         ));
       });
@@ -40,6 +43,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     final pointsService = context.read<PointsService>();
+    final settings = context.read<CoachSettingsService>();
 
     setState(() {
       _messages.add(CoachMessage(text: text, sender: MessageSender.user));
@@ -52,6 +56,7 @@ class _ChatScreenState extends State<ChatScreen> {
       text,
       pointsService.profile,
       history: _messages.sublist(0, _messages.length - 1),
+      personality: settings.personality,
     );
 
     await pointsService.addPoints(2);

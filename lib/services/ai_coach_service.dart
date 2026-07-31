@@ -4,8 +4,9 @@ import 'package:http/http.dart' as http;
 import '../models/coach_message.dart';
 import '../models/user_profile.dart';
 import '../models/workout.dart';
+import 'coach_settings_service.dart';
 
-/// Service generating responses for the Harsh AI Coach.
+/// Service generating responses for the AI Coach.
 class AiCoachService {
   final bool useRemoteApi;
   final String? apiUrl;
@@ -57,9 +58,12 @@ class AiCoachService {
     "Logged {exercise}. Baseline set. Now let's see if you have the discipline to exceed it.",
   ];
 
-  String greeting(UserProfile profile, {int daysInactive = 0}) {
+  String greeting(UserProfile profile, {int daysInactive = 0, CoachPersonality personality = CoachPersonality.aggressive}) {
     if (daysInactive >= 2) {
       final roast = _missedDayRoasts[_rand.nextInt(_missedDayRoasts.length)];
+      if (personality == CoachPersonality.gentle) {
+        return "I noticed you took a break, {name}. Rest is part of the journey.\nWhenever you're ready, I'm here to help you get back on track.";
+      }
       return "🚨 INACTIVITY ALERT 🚨\n$roast";
     }
     final template = _harshGreetings[_rand.nextInt(_harshGreetings.length)];
@@ -123,45 +127,91 @@ class AiCoachService {
 
   /// Interactive Coach Chat Response
   Future<String> respond(String userMessage, UserProfile profile,
-      {List<CoachMessage> history = const []}) async {
+      {List<CoachMessage> history = const [], CoachPersonality personality = CoachPersonality.aggressive}) async {
     if (useRemoteApi && apiUrl != null) {
       try {
-        return await _respondViaApi(userMessage, profile, history);
+        return await _respondViaApi(userMessage, profile, history, personality);
       } catch (_) {
-        return _localResponse(userMessage, profile);
+        final local = _localResponse(userMessage, profile, personality);
+        return '⚠️ $local\n\n_(Offline response — API unreachable.)_';
       }
     }
-    return _localResponse(userMessage, profile);
+    return _localResponse(userMessage, profile, personality);
   }
 
-  String _localResponse(String userMessage, UserProfile profile) {
+  String _localResponse(String userMessage, UserProfile profile,
+      [CoachPersonality personality = CoachPersonality.aggressive]) {
     final msg = userMessage.toLowerCase();
+    final gentle = personality == CoachPersonality.gentle;
 
     if (msg.contains('fatigue') || msg.contains('dur') || msg.contains('tired') || msg.contains('hard')) {
+      if (gentle) {
+        return "I hear you, rest matters. Try a light session today — movement always beats zero.";
+      }
+      if (personality == CoachPersonality.balanced) {
+        return "Feeling tired? A light session is better than nothing. Just don't skip completely.";
+      }
       return "Tired? Excuses don't burn calories or lift iron. Either do a light session or stop complaining.";
     }
     if (msg.contains('merci') || msg.contains('thanks')) {
+      if (gentle) {
+        return "You're welcome! Showing up is what counts. Proud of you for staying consistent.";
+      }
       return "Don't thank me. Thank your future self if you actually stay consistent.";
     }
     if (msg.contains('skip') || msg.contains('miss')) {
+      if (gentle) {
+        return "It's okay to miss a day. The important thing is getting back to it tomorrow.";
+      }
       return "Skipping today? Fine, but don't cry to me when your stats drop tomorrow.";
     }
 
+    if (gentle) {
+      return "Take your time! Log your sets whenever you're ready — I'll be right here.";
+    }
     return "Less talking, more lifting. Go log your sets and show me numbers!";
   }
 
+  String _systemPrompt(UserProfile profile, CoachPersonality personality) {
+    final String tone;
+    switch (personality) {
+      case CoachPersonality.gentle:
+        tone = 'You are a warm, supportive, and encouraging AI Fitness Coach. '
+            'Praise effort, be patient, celebrate small wins. '
+            'Motivate with kindness and understanding. Keep a soft, uplifting tone.';
+        break;
+      case CoachPersonality.balanced:
+        tone = 'You are a friendly but firm AI Fitness Coach. '
+            'Encourage and motivate, but don\'t shy away from a gentle push. '
+            'Positive but honest.';
+        break;
+      case CoachPersonality.aggressive:
+        tone = 'You are a brutally honest, harsh, demanding, but effective AI Fitness Coach. '
+            'Be blunt, call out weak excuses, but demand excellence. Do not use corporate fluffy language.';
+        break;
+      case CoachPersonality.brutal:
+        tone = 'You are an extremely harsh, insulting, and brutal drill-sergeant style AI Fitness Coach. '
+            'Ruthlessly mock weak excuses, use tough love without mercy. '
+            'Be provocative and harsh but always push toward results. Never be actually offensive.';
+        break;
+    }
+    return '$tone '
+        'User: ${profile.name}, Goal: ${profile.goal}. '
+        'Use **bold** between double asterisks to emphasize key words.';
+  }
+
   Future<String> _respondViaApi(String userMessage, UserProfile profile,
-      List<CoachMessage> history) async {
+      List<CoachMessage> history, CoachPersonality personality) async {
+    final historyWindow = history.length > 12
+        ? history.sublist(history.length - 12)
+        : history;
+
     final messages = [
       {
         'role': 'system',
-        'content':
-            'You are a brutally honest, harsh, demanding, but effective AI Fitness Coach. '
-            'User: ${profile.name}, Goal: ${profile.goal}. '
-            'Be blunt, call out weak excuses, but demand excellence. Do not use corporate fluffy language. '
-           'Use **bold** between double asterisks to emphasize key words.'
+        'content': _systemPrompt(profile, personality),
       },
-      for (final m in history)
+      for (final m in historyWindow)
         {
           'role': m.sender == MessageSender.user ? 'user' : 'assistant',
           'content': m.text,
@@ -169,17 +219,19 @@ class AiCoachService {
       {'role': 'user', 'content': userMessage},
     ];
 
-    final response = await http.post(
-      Uri.parse(apiUrl!),
-      headers: {
-        'Content-Type': 'application/json',
-        if (apiKey != null) 'Authorization': 'Bearer $apiKey',
-      },
-      body: jsonEncode({
-        'model': 'ministral-3b-latest',
-        'messages': messages,
-      }),
-    );
+    final response = await http
+        .post(
+          Uri.parse(apiUrl!),
+          headers: {
+            'Content-Type': 'application/json',
+            if (apiKey != null) 'Authorization': 'Bearer $apiKey',
+          },
+          body: jsonEncode({
+            'model': 'ministral-3b-latest',
+            'messages': messages,
+          }),
+        )
+        .timeout(const Duration(seconds: 30));
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
