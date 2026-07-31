@@ -100,18 +100,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Consumer<TranslationService>(
-            builder: (context, ts, _) => SegmentedButton<Locale>(
-              segments: const [
-                ButtonSegment(
-                    value: Locale('fr'), label: Text('Français'), icon: Icon(Icons.language)),
-                ButtonSegment(
-                    value: Locale('en'), label: Text('English'), icon: Icon(Icons.language)),
-              ],
-              selected: {ts.locale},
-              onSelectionChanged: (selected) {
-                ts.setLocale(selected.first);
-              },
-            ),
+            builder: (context, ts, _) {
+              final locales = [
+                (const Locale('fr'), '🇫🇷', 'Français'),
+                (const Locale('en'), '🇬🇧', 'English'),
+                (const Locale('de'), '🇩🇪', 'Deutsch'),
+                (const Locale('es'), '🇪🇸', 'Español'),
+                (const Locale('it'), '🇮🇹', 'Italiano'),
+              ];
+              return Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: locales.map((l) {
+                  final selected = ts.locale.languageCode == l.$1.languageCode;
+                  return ChoiceChip(
+                    selected: selected,
+                    label: Text('${l.$2} ${l.$3}'),
+                    onSelected: (_) => ts.setLocale(l.$1),
+                  );
+                }).toList(),
+              );
+            },
           ),
         ],
       ),
