@@ -56,14 +56,19 @@ class AvatarConfig {
         'outfitColor': outfitColor.value,
       };
 
+  static T _safeEnum<T>(List<T> values, dynamic index, T fallback) {
+    if (index is int && index >= 0 && index < values.length) return values[index];
+    return fallback;
+  }
+
   factory AvatarConfig.fromJson(Map<String, dynamic> json) => AvatarConfig(
         skinTone: Color(json['skinTone'] ?? skinToneSwatches[1].value),
-        hairStyle: HairStyle.values[json['hairStyle'] ?? 1],
+        hairStyle: _safeEnum(HairStyle.values, json['hairStyle'], HairStyle.short),
         hairColor: Color(json['hairColor'] ?? hairColorSwatches[0].value),
-        eyeStyle: EyeStyle.values[json['eyeStyle'] ?? 0],
+        eyeStyle: _safeEnum(EyeStyle.values, json['eyeStyle'], EyeStyle.round),
         eyeColor: Color(json['eyeColor'] ?? 0xFF3E2723),
-        mouthStyle: MouthStyle.values[json['mouthStyle'] ?? 0],
-        accessory: Accessory.values[json['accessory'] ?? 0],
+        mouthStyle: _safeEnum(MouthStyle.values, json['mouthStyle'], MouthStyle.smile),
+        accessory: _safeEnum(Accessory.values, json['accessory'], Accessory.none),
         outfitColor: Color(json['outfitColor'] ?? outfitSwatches[0].value),
       );
 

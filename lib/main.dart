@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'services/points_service.dart';
 import 'services/avatar_service.dart';
@@ -10,6 +11,8 @@ import 'services/ai_coach_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: '.env');
 
   final notificationService = NotificationService();
   await notificationService.init();
@@ -26,7 +29,7 @@ Future<void> main() async {
   final aiCoachService = AiCoachService(
     useRemoteApi: true,
     apiUrl: 'https://api.mistral.ai/v1/chat/completions',
-    apiKey: 'YOUR_MISTRAL_API_KEY',
+    apiKey: dotenv.env['MISTRAL_API_KEY'] ?? '',
   );
 
   runApp(CoachApp(
