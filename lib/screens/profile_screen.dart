@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/points_service.dart';
 import '../services/avatar_service.dart';
+import '../services/translation_service.dart';
+import '../services/tr.dart';
 import '../widgets/avatar_widget.dart';
 import 'avatar_creator_screen.dart';
 
@@ -41,8 +43,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Ton profil',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          Text(context.tr('yourProfile'),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           Center(
             child: Column(
@@ -58,20 +60,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   },
                   icon: const Icon(Icons.face_retouching_natural),
-                  label: const Text('Personnaliser mon coach'),
+                  label: Text(context.tr('customizeMyCoach')),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          const Text('Prénom / pseudo'),
+          Text(context.tr('nameLabel')),
           const SizedBox(height: 6),
           TextField(
             controller: _nameController,
             decoration: const InputDecoration(border: OutlineInputBorder()),
           ),
           const SizedBox(height: 20),
-          const Text('Ton objectif'),
+          Text(context.tr('goalLabel')),
           const SizedBox(height: 6),
           TextField(
             controller: _goalController,
@@ -85,11 +87,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
               await pointsService.updateGoal(_goalController.text.trim());
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Profil mis à jour ✅')),
+                  SnackBar(content: Text(context.tr('profileUpdated'))),
                 );
               }
             },
-            child: const Text('Enregistrer'),
+            child: Text(context.tr('save')),
+          ),
+          const SizedBox(height: 32),
+          const Divider(),
+          const SizedBox(height: 8),
+          Text(context.tr('language'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Consumer<TranslationService>(
+            builder: (context, ts, _) => SegmentedButton<Locale>(
+              segments: const [
+                ButtonSegment(
+                    value: Locale('fr'), label: Text('Français'), icon: Icon(Icons.language)),
+                ButtonSegment(
+                    value: Locale('en'), label: Text('English'), icon: Icon(Icons.language)),
+              ],
+              selected: {ts.locale},
+              onSelectionChanged: (selected) {
+                ts.setLocale(selected.first);
+              },
+            ),
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/workout.dart';
+import '../services/tr.dart';
 
 class CoachReactionDialog extends StatelessWidget {
   final List<ExerciseComparisonResult> comparisonResults;
@@ -25,15 +26,15 @@ class CoachReactionDialog extends StatelessWidget {
 
     if (hasRegression) {
       headerColor = Colors.redAccent;
-      headerTitle = "COACH RECAP";
+      headerTitle = context.tr('coachRecap');
       headerIcon = Icons.warning_amber_rounded;
     } else if (hasImprovement) {
       headerColor = Colors.green;
-      headerTitle = "WORKOUT ACCEPTABLE";
+      headerTitle = context.tr('workoutAcceptable');
       headerIcon = Icons.thumb_up_alt_rounded;
     } else {
       headerColor = Colors.orangeAccent;
-      headerTitle = "WORKOUT LOGGED";
+      headerTitle = context.tr('workoutLogged');
       headerIcon = Icons.fitness_center;
     }
 
@@ -123,22 +124,22 @@ class CoachReactionDialog extends StatelessWidget {
                     case PerformanceStatus.improved:
                       chipColor = Colors.greenAccent;
                       iconStr = "▲";
-                      badgeText = "+${res.volumeDeltaPercent.abs().toStringAsFixed(1)}% Vol";
+                      badgeText = "+${res.volumeDeltaPercent.abs().toStringAsFixed(1)}% ${context.tr('vol')}";
                       break;
                     case PerformanceStatus.regressed:
                       chipColor = Colors.redAccent;
                       iconStr = "▼";
-                      badgeText = "-${res.volumeDeltaPercent.abs().toStringAsFixed(1)}% Vol";
+                      badgeText = "-${res.volumeDeltaPercent.abs().toStringAsFixed(1)}% ${context.tr('vol')}";
                       break;
                     case PerformanceStatus.stagnant:
                       chipColor = Colors.amberAccent;
                       iconStr = "=";
-                      badgeText = "Stagnant";
+                      badgeText = context.tr('stagnant');
                       break;
                     case PerformanceStatus.firstTime:
                       chipColor = Colors.lightBlueAccent;
                       iconStr = "★";
-                      badgeText = "New baseline";
+                      badgeText = context.tr('newBaseline');
                       break;
                   }
 
@@ -202,8 +203,8 @@ class CoachReactionDialog extends StatelessWidget {
                     Navigator.of(context).pop();
                     onClose();
                   },
-                  child: const Text(
-                    "ACCEPT & GRIND ON",
+                  child: Text(
+                    context.tr('acceptAndGrind'),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,

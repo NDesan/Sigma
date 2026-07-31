@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 import 'services/points_service.dart';
 import 'services/avatar_service.dart';
 import 'services/notification_service.dart';
+import 'services/translation_service.dart';
 import 'screens/home_screen.dart';
 
 import 'services/workout_service.dart';
@@ -13,6 +15,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await dotenv.load(fileName: '.env');
+
+  final translationService = TranslationService();
+  await translationService.load();
 
   final notificationService = NotificationService();
   await notificationService.init();
@@ -33,6 +38,7 @@ Future<void> main() async {
   );
 
   runApp(CoachApp(
+    translationService: translationService,
     pointsService: pointsService,
     avatarService: avatarService,
     workoutService: workoutService,
@@ -42,6 +48,7 @@ Future<void> main() async {
 }
 
 class CoachApp extends StatelessWidget {
+  final TranslationService translationService;
   final PointsService pointsService;
   final AvatarService avatarService;
   final WorkoutService workoutService;
@@ -50,6 +57,7 @@ class CoachApp extends StatelessWidget {
 
   const CoachApp({
     super.key,
+    required this.translationService,
     required this.pointsService,
     required this.avatarService,
     required this.workoutService,
@@ -61,20 +69,28 @@ class CoachApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: translationService),
         ChangeNotifierProvider.value(value: pointsService),
         ChangeNotifierProvider.value(value: avatarService),
         ChangeNotifierProvider.value(value: workoutService),
         Provider.value(value: aiCoachService),
       ],
-      child: MaterialApp(
-        title: 'Mon Coach',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          colorSchemeSeed: Colors.deepPurpleAccent,
-          fontFamily: 'Roboto',
+      child: Consumer<TranslationService>(
+        builder: (context, ts, _) => MaterialApp(
+          title: 'Sigma',
+          debugShowCheckedModeBanner: false,
+          locale: ts.locale,
+          supportedLocales: TranslationService.supportedLocales,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          theme: ThemeData(
+            useMaterial3: true,
+            colorSchemeSeed: Colors.deepPurpleAccent,
+          ),
+          home: HomeScreen(notificationService: notificationService),
         ),
-        home: HomeScreen(notificationService: notificationService),
       ),
     );
   }

@@ -5,6 +5,7 @@ import '../services/workout_service.dart';
 import '../services/ai_coach_service.dart';
 import '../widgets/coach_reaction_dialog.dart';
 import '../widgets/rest_timer_sheet.dart';
+import '../services/tr.dart';
 
 class WorkoutLogScreen extends StatefulWidget {
   final AiCoachService aiCoachService;
@@ -163,6 +164,20 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
     await context.read<WorkoutService>().updateActiveSessionExercises(entries);
   }
 
+  String _exerciseKey(String name) {
+    const map = {
+      'Bench Press': 'benchPress',
+      'Squat': 'squats',
+      'Deadlift': 'deadlift',
+      'Overhead Press': 'shoulderPress',
+      'Pull Ups': 'pullUps',
+      'Dumbbell Curl': 'bicepCurls',
+      'Push Ups': 'pushUps',
+      'Dips': 'tricepDips',
+    };
+    return map[name] ?? name;
+  }
+
   List<ExerciseEntry> _buildExerciseEntries() {
     final entries = <ExerciseEntry>[];
     for (final draft in _exercises) {
@@ -240,9 +255,9 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
     final entries = _buildExerciseEntries();
     if (entries.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
             content: Text(
-                "Add at least one exercise with valid reps before ending.")),
+                context.tr('addExerciseWarning'))),
       );
       return;
     }
@@ -277,12 +292,12 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
   }
 
   String _formatDateTime(DateTime dt) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    final months = [
+      context.tr('jan'), context.tr('feb'), context.tr('mar'), context.tr('apr'), context.tr('may'), context.tr('jun'),
+      context.tr('jul'), context.tr('aug'), context.tr('sep'), context.tr('oct'), context.tr('nov'), context.tr('dec')
     ];
-    const days = [
-      'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
+    final days = [
+      context.tr('mon'), context.tr('tue'), context.tr('wed'), context.tr('thu'), context.tr('fri'), context.tr('sat'), context.tr('sun')
     ];
     final hour = dt.hour > 12
         ? dt.hour - 12
@@ -309,7 +324,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
             children: [
               Text(
                 _nameController.text.trim().isEmpty
-                    ? "WORKOUT"
+                    ? context.tr('workoutLog')
                     : _nameController.text.trim(),
                 style: const TextStyle(
                     fontWeight: FontWeight.bold,
@@ -331,7 +346,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
           actions: [
             IconButton(
               icon: const Icon(Icons.timer_outlined),
-              tooltip: 'Rest Timer',
+              tooltip: context.tr('restTimer'),
               onPressed: _showRestTimer,
             ),
           ],
@@ -343,8 +358,8 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
             children: [
               _buildWorkoutMetadataCard(),
               const SizedBox(height: 20),
-              const Text(
-                "QUICK ADD EXERCISE",
+              Text(
+                context.tr('quickAddExercise'),
                 style: TextStyle(
                   color: Colors.grey,
                   fontSize: 12,
@@ -358,7 +373,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                 runSpacing: 8,
                 children: _commonExercises.map((exName) {
                   return ActionChip(
-                    label: Text(exName),
+                    label: Text(context.tr(_exerciseKey(exName))),
                     backgroundColor: const Color(0xFF1E1E2C),
                     labelStyle: const TextStyle(
                         color: Colors.deepPurpleAccent, fontSize: 12),
@@ -375,7 +390,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                       style:
                           const TextStyle(color: Colors.white, fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: "Custom exercise name...",
+                        hintText: context.tr('customExerciseName'),
                         hintStyle: const TextStyle(color: Colors.grey),
                         filled: true,
                         fillColor: const Color(0xFF1E1E2C),
@@ -423,8 +438,8 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                   ),
                   onPressed: _endWorkout,
                   icon: const Icon(Icons.check_circle_outline),
-                  label: const Text(
-                    "END WORKOUT",
+                  label: Text(
+                    context.tr('endWorkout'),
                     style: TextStyle(
                         fontWeight: FontWeight.bold, letterSpacing: 1.1),
                   ),
@@ -455,7 +470,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                 fontSize: 20,
               ),
               decoration: const InputDecoration(
-                hintText: "Workout Name",
+                hintText: context.tr('workoutName'),
                 hintStyle: TextStyle(color: Colors.grey),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
@@ -474,15 +489,15 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
             const SizedBox(height: 8),
             _buildInfoRow(
               icon: Icons.schedule,
-              label: "Start ${_formatTime(_workoutDateTime)}",
+              label: '${context.tr('start')} ${_formatTime(_workoutDateTime)}',
               onTap: _pickStartTime,
             ),
             const SizedBox(height: 8),
             _buildInfoRow(
               icon: Icons.timer_outlined,
               label: _endDateTime != null
-                  ? "End ${_formatTime(_endDateTime!)}"
-                  : "End time (not set)",
+                  ? '${context.tr('end')} ${_formatTime(_endDateTime!)}'
+                  : context.tr('endTimeNotSet'),
               onTap: _pickEndTime,
             ),
           ],
@@ -518,12 +533,12 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
   }
 
   String _formatDate(DateTime dt) {
-    const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    final months = [
+      context.tr('jan'), context.tr('feb'), context.tr('mar'), context.tr('apr'), context.tr('may'), context.tr('jun'),
+      context.tr('jul'), context.tr('aug'), context.tr('sep'), context.tr('oct'), context.tr('nov'), context.tr('dec')
     ];
-    const days = [
-      'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'
+    final days = [
+      context.tr('mon'), context.tr('tue'), context.tr('wed'), context.tr('thu'), context.tr('fri'), context.tr('sat'), context.tr('sun')
     ];
     return '${days[dt.weekday - 1]}, ${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
@@ -557,9 +572,9 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),
-                    decoration: const InputDecoration(
-                      hintText: "Exercise Name",
-                      hintStyle: TextStyle(color: Colors.grey),
+                    decoration: InputDecoration(
+                      hintText: context.tr('exerciseName'),
+                      hintStyle: const TextStyle(color: Colors.grey),
                       border: InputBorder.none,
                     ),
                   ),
@@ -576,34 +591,34 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
               ],
             ),
             const Divider(color: Colors.white10),
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(vertical: 4.0),
               child: Row(
                 children: [
                   SizedBox(
                       width: 32,
-                      child: Text("SET",
+                      child: Text(context.tr('sets'),
                           style: TextStyle(
                               color: Colors.grey,
                               fontSize: 11,
                               fontWeight: FontWeight.bold))),
                   Expanded(
                       flex: 2,
-                      child: Text("KG",
-                          style: TextStyle(
+                      child: Text(context.tr('kg'),
+                          style: const TextStyle(
                               color: Colors.grey,
                               fontSize: 11,
                               fontWeight: FontWeight.bold))),
                   Expanded(
                       flex: 2,
-                      child: Text("REPS",
+                      child: Text(context.tr('repsAbbr'),
                           style: TextStyle(
                               color: Colors.grey,
                               fontSize: 11,
                               fontWeight: FontWeight.bold))),
                   Expanded(
                       flex: 3,
-                      child: Text("NOTES",
+                      child: Text(context.tr('notes'),
                           style: TextStyle(
                               color: Colors.grey,
                               fontSize: 11,
@@ -624,7 +639,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                 TextButton.icon(
                   onPressed: () => _addSet(ex),
                   icon: const Icon(Icons.add, size: 16),
-                  label: const Text("ADD SET"),
+                  label: Text(context.tr('addSet')),
                   style: TextButton.styleFrom(
                       foregroundColor: Colors.deepPurpleAccent),
                 ),
@@ -632,7 +647,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                 TextButton.icon(
                   onPressed: _showRestTimer,
                   icon: const Icon(Icons.timer_outlined, size: 16),
-                  label: const Text("REST"),
+                  label: Text(context.tr('restTimer')),
                   style:
                       TextButton.styleFrom(foregroundColor: Colors.grey),
                 ),
@@ -653,7 +668,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
           SizedBox(
             width: 32,
             child: Text(
-              "#${setIndex + 1}",
+              context.tr('setPrefix', [(setIndex + 1).toString()]),
               style: const TextStyle(
                   color: Colors.deepPurpleAccent,
                   fontWeight: FontWeight.bold,
@@ -705,7 +720,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
               controller: setDraft.notesController,
               style: const TextStyle(color: Colors.white, fontSize: 12),
               decoration: InputDecoration(
-                hintText: "Optional",
+                hintText: context.tr('optional'),
                 hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
                 filled: true,
                 fillColor: Colors.black26,

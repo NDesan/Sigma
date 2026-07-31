@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/points_service.dart';
+import '../services/tr.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
@@ -14,19 +15,19 @@ class ProgressScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Ta progression',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          Text(context.tr('yourProgress'),
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           const SizedBox(height: 20),
           Row(
             children: [
               _StatCard(
-                  label: 'Streak actuel',
-                  value: '${profile.streakDays} jours',
+                  label: context.tr('currentStreak'),
+                  value: '${profile.streakDays} ${context.tr('days')}',
                   icon: Icons.local_fire_department,
                   color: Colors.deepOrange),
               const SizedBox(width: 12),
               _StatCard(
-                  label: 'Niveau',
+                  label: context.tr('currentLevel'),
                   value: '${profile.level}',
                   icon: Icons.star,
                   color: Colors.amber.shade700),
@@ -34,20 +35,20 @@ class ProgressScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _StatCard(
-              label: 'Points totaux',
-              value: '${profile.points} pts (niveau actuel)',
+              label: context.tr('totalPoints'),
+              value: '${profile.points} ${context.tr('pts')}',
               icon: Icons.bolt,
               color: Colors.deepPurpleAccent,
               fullWidth: true),
           const SizedBox(height: 28),
-          const Text('Badges débloqués',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(context.tr('badgesUnlocked'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Expanded(
             child: profile.badges.isEmpty
                 ? Center(
                     child: Text(
-                      'Pas encore de badge.\nComplète ton action du jour pour en débloquer !',
+                      context.tr('noBadgesYet'),
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Colors.grey.shade600),
                     ),

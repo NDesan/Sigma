@@ -5,6 +5,7 @@ import '../services/avatar_service.dart';
 import '../services/notification_service.dart';
 import '../services/workout_service.dart';
 import '../services/ai_coach_service.dart';
+import '../services/tr.dart';
 import '../widgets/avatar_widget.dart';
 import '../widgets/points_bar.dart';
 import '../widgets/speech_bubble.dart';
@@ -40,14 +41,14 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tabIndex,
         onDestinationSelected: (i) => setState(() => _tabIndex = i),
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: 'Accueil'),
+        destinations: [
+          NavigationDestination(icon: const Icon(Icons.home), label: context.tr('home')),
           NavigationDestination(
-              icon: Icon(Icons.chat_bubble_outline), label: 'Coach'),
+              icon: const Icon(Icons.chat_bubble_outline), label: context.tr('chat')),
           NavigationDestination(
-              icon: Icon(Icons.bar_chart), label: 'Progrès'),
+              icon: const Icon(Icons.bar_chart), label: context.tr('history')),
           NavigationDestination(
-              icon: Icon(Icons.person_outline), label: 'Profil'),
+              icon: const Icon(Icons.person_outline), label: context.tr('profile')),
         ],
       ),
     );
@@ -139,8 +140,8 @@ class _CoachHomeTab extends StatelessWidget {
                     ),
                     label: Text(
                       workoutService.hasActiveSession
-                          ? "RESUME WORKOUT"
-                          : "LOG WORKOUT 🏋️",
+                          ? context.tr('resumeWorkout')
+                          : context.tr('logWorkoutBtn'),
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -173,7 +174,7 @@ class _CoachHomeTab extends StatelessWidget {
                       );
                     },
                     icon: const Icon(Icons.history),
-                    label: const Text("Workout History"),
+                    label: Text(context.tr('history')),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -192,14 +193,14 @@ class _CoachHomeTab extends StatelessWidget {
                       await pointsService.addPoints(10, badge: 'Quick Check-in');
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Quick check-in recorded (+10 pts)'),
+                          SnackBar(
+                            content: Text(context.tr('quickCheckin') + " (+10 ${context.tr('pts')})"),
                           ),
                         );
                       }
                     },
                     icon: const Icon(Icons.check_circle_outline),
-                    label: const Text("Quick Daily Check-in"),
+                    label: Text(context.tr('quickCheckin')),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
@@ -216,19 +217,19 @@ class _CoachHomeTab extends StatelessWidget {
                       await notificationService.scheduleDailyReminder(
                         hour: 18,
                         minute: 0,
-                        title: 'Ton coach t\'attend 👀',
-                        body: 'Temps de s\'entraîner et de faire tes séries !',
+                        title: context.tr('notificationTitle'),
+                        body: context.tr('notificationBody'),
                       );
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Rappel quotidien programmé à 18h00 ✅'),
+                          SnackBar(
+                            content: Text(context.tr('reminderScheduled')),
                           ),
                         );
                       }
                     },
                     icon: const Icon(Icons.notifications_active_outlined),
-                    label: const Text('Activer le rappel quotidien'),
+                    label: Text(context.tr('enableReminder')),
                   ),
                 ),
               ],

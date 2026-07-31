@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/coach_message.dart';
 import '../services/ai_coach_service.dart';
+import '../services/tr.dart';
 import '../services/points_service.dart';
 import '../services/avatar_service.dart';
 import '../widgets/avatar_widget.dart';
@@ -97,13 +98,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Ton coach',
+                      context.tr('yourCoach'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     Text(
-                      'Prêt à te motiver à petit pas',
+                      context.tr('coachSubtitle'),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey.shade700,
                       ),
@@ -136,7 +137,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 child: TextField(
                   controller: _controller,
                   decoration: InputDecoration(
-                    hintText: 'Écris à ton coach...',
+                    hintText: context.tr('typeMessage'),
                     filled: true,
                     fillColor: Colors.grey.shade100,
                     border: OutlineInputBorder(

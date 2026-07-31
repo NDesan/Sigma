@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_profile.dart';
+import '../services/tr.dart';
 
 class PointsBar extends StatelessWidget {
   final UserProfile profile;
@@ -13,13 +14,13 @@ class PointsBar extends StatelessWidget {
         _StatChip(
           icon: Icons.local_fire_department,
           color: Colors.deepOrange,
-          label: '${profile.streakDays}j',
+          label: '${profile.streakDays} ${context.tr('days')}',
         ),
         const SizedBox(width: 10),
         _StatChip(
           icon: Icons.star,
           color: Colors.amber.shade700,
-          label: 'Niv. ${profile.level}',
+          label: '${context.tr('level')}. ${profile.level}',
         ),
         const SizedBox(width: 10),
         Expanded(
