@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/points_service.dart';
 import '../services/avatar_service.dart';
-import '../services/coach_settings_service.dart';
-import '../services/translation_service.dart';
 import '../services/tr.dart';
 import '../widgets/avatar_widget.dart';
 import 'avatar_creator_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -39,19 +38,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final pointsService = context.watch<PointsService>();
     final avatarConfig = context.watch<AvatarService>().config;
 
+    const denseField = InputDecoration(
+      isDense: true,
+      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: OutlineInputBorder(),
+    );
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(context.tr('yourProfile'),
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(context.tr('yourProfile'),
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              IconButton(
+                tooltip: context.tr('settings'),
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Center(
             child: Column(
               children: [
-                AvatarWidget(config: avatarConfig, size: 120, animate: false),
-                const SizedBox(height: 10),
+                AvatarWidget(config: avatarConfig, size: 110, animate: false),
+                const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () {
                     Navigator.of(context).push(
@@ -60,29 +81,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.face_retouching_natural),
+                  icon: const Icon(Icons.face_retouching_natural, size: 18),
                   label: Text(context.tr('customizeMyCoach')),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
-          Text(context.tr('nameLabel')),
-          const SizedBox(height: 6),
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
+            decoration: denseField.copyWith(labelText: context.tr('nameLabel')),
           ),
-          const SizedBox(height: 20),
-          Text(context.tr('goalLabel')),
-          const SizedBox(height: 6),
+          const SizedBox(height: 16),
           TextField(
             controller: _goalController,
             maxLines: 2,
-            decoration: const InputDecoration(border: OutlineInputBorder()),
+            decoration: denseField.copyWith(labelText: context.tr('goalLabel')),
           ),
-          const SizedBox(height: 24),
-          FilledButton(
+          const SizedBox(height: 20),
+          FilledButton.icon(
             onPressed: () async {
               await pointsService.updateName(_nameController.text.trim());
               await pointsService.updateGoal(_goalController.text.trim());
@@ -92,82 +109,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               }
             },
-            child: Text(context.tr('save')),
-          ),
-          const SizedBox(height: 32),
-          const Divider(),
-          const SizedBox(height: 8),
-          Text(context.tr('language'),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          Consumer<TranslationService>(
-            builder: (context, ts, _) {
-              final locales = [
-                (const Locale('fr'), '🇫🇷', 'Français'),
-                (const Locale('en'), '🇬🇧', 'English'),
-                (const Locale('de'), '🇩🇪', 'Deutsch'),
-                (const Locale('es'), '🇪🇸', 'Español'),
-                (const Locale('it'), '🇮🇹', 'Italiano'),
-              ];
-              return Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: locales.map((l) {
-                  final selected = ts.locale.languageCode == l.$1.languageCode;
-                  return ChoiceChip(
-                    selected: selected,
-                    label: Text('${l.$2} ${l.$3}'),
-                    onSelected: (_) => ts.setLocale(l.$1),
-                  );
-                }).toList(),
-              );
-            },
-          ),
-          const SizedBox(height: 32),
-          const Divider(),
-          const SizedBox(height: 8),
-          Text(context.tr('coachPersonality'),
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(context.tr('personalityDescription'),
-              style: TextStyle(color: Theme.of(context).colorScheme.outline)),
-          const SizedBox(height: 12),
-          Consumer<CoachSettingsService>(
-            builder: (context, settings, _) {
-              final labels = {
-                CoachPersonality.gentle: context.tr('gentle'),
-                CoachPersonality.balanced: context.tr('balanced'),
-                CoachPersonality.aggressive: context.tr('aggressive'),
-                CoachPersonality.brutal: context.tr('brutal'),
-              };
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.sentiment_very_satisfied, size: 20),
-                      Expanded(
-                        child: Slider(
-                          value: settings.aggressiveness,
-                          divisions: 3,
-                          onChanged: (value) =>
-                              settings.setAggressiveness(value),
-                        ),
-                      ),
-                      const Icon(Icons.local_fire_department, size: 20),
-                    ],
-                  ),
-                  Align(
-                    alignment: Alignment.center,
-                    child: Text(
-                      labels[settings.personality] ?? '',
-                      style: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              );
-            },
+            icon: const Icon(Icons.save_outlined, size: 18),
+            label: Text(context.tr('save')),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
           ),
         ],
       ),
