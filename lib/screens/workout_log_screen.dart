@@ -469,7 +469,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: context.tr('workoutName'),
                 hintStyle: TextStyle(color: Colors.grey),
                 border: InputBorder.none,
