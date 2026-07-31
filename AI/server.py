@@ -49,7 +49,7 @@ async def coach(req: ChatRequest):
                 "model": "'ministral-3b-latest'",
                 "messages": req.messages,
                 "temperature": 0.7,
-                "max_tokens": 300,
+                "max_tokens": 100,
             },
         )
 

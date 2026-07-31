@@ -110,6 +110,12 @@
       "languageVersion": "2.17"
     },
     {
+      "name": "flutter_svg",
+      "rootUri": "file:///C:/Users/nicol/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_svg-2.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    },
+    {
       "name": "flutter_test",
       "rootUri": "file:///C:/Users/nicol/develop/flutter_windows_3.44.8-stable/flutter/packages/flutter_test",
       "packageUri": "lib/",
@@ -120,6 +126,18 @@
       "rootUri": "file:///C:/Users/nicol/develop/flutter_windows_3.44.8-stable/flutter/packages/flutter_web_plugins",
       "packageUri": "lib/",
       "languageVersion": "3.10"
+    },
+    {
+      "name": "fluttermoji",
+      "rootUri": "file:///C:/Users/nicol/AppData/Local/Pub/Cache/hosted/pub.dev/fluttermoji-1.0.2",
+      "packageUri": "lib/",
+      "languageVersion": "2.12"
+    },
+    {
+      "name": "get",
+      "rootUri": "file:///C:/Users/nicol/AppData/Local/Pub/Cache/hosted/pub.dev/get-4.7.3",
+      "packageUri": "lib/",
+      "languageVersion": "2.15"
     },
     {
       "name": "http",
@@ -192,6 +210,12 @@
       "rootUri": "file:///C:/Users/nicol/AppData/Local/Pub/Cache/hosted/pub.dev/path-1.9.1",
       "packageUri": "lib/",
       "languageVersion": "3.4"
+    },
+    {
+      "name": "path_parsing",
+      "rootUri": "file:///C:/Users/nicol/AppData/Local/Pub/Cache/hosted/pub.dev/path_parsing-1.1.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.3"
     },
     {
       "name": "path_provider_linux",
@@ -336,6 +360,24 @@
       "rootUri": "file:///C:/Users/nicol/AppData/Local/Pub/Cache/hosted/pub.dev/typed_data-1.4.0",
       "packageUri": "lib/",
       "languageVersion": "3.5"
+    },
+    {
+      "name": "vector_graphics",
+      "rootUri": "file:///C:/Users/nicol/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics-1.2.2",
+      "packageUri": "lib/",
+      "languageVersion": "3.9"
+    },
+    {
+      "name": "vector_graphics_codec",
+      "rootUri": "file:///C:/Users/nicol/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_codec-1.1.13",
+      "packageUri": "lib/",
+      "languageVersion": "3.4"
+    },
+    {
+      "name": "vector_graphics_compiler",
+      "rootUri": "file:///C:/Users/nicol/AppData/Local/Pub/Cache/hosted/pub.dev/vector_graphics_compiler-1.3.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.10"
     },
     {
       "name": "vector_math",

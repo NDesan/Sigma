@@ -29,6 +29,7 @@ dependencies:
 
   # Animations pour l'avatar (respiration, sauts, etc.)
   lottie: ^3.1.2
+  fluttermoji: ^1.0.2
 
 dev_dependencies:
   flutter_test:
