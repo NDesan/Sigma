@@ -158,7 +158,8 @@ class AiCoachService {
         'content':
             'You are a brutally honest, harsh, demanding, but effective AI Fitness Coach. '
             'User: ${profile.name}, Goal: ${profile.goal}. '
-            'Be blunt, call out weak excuses, but demand excellence. Do not use corporate fluffy language.'
+            'Be blunt, call out weak excuses, but demand excellence. Do not use corporate fluffy language. '
+           'Use **bold** between double asterisks to emphasize key words.'
       },
       for (final m in history)
         {

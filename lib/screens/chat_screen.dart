@@ -166,6 +166,39 @@ class _MessageBubble extends StatelessWidget {
 
   const _MessageBubble({required this.message});
 
+  Widget _parseBoldText(String text, bool isUser) {
+    final baseStyle = TextStyle(color: isUser ? Colors.white : Colors.black87);
+    final boldStyle = baseStyle.copyWith(fontWeight: FontWeight.w900);
+
+    final spans = <TextSpan>[];
+    final regex = RegExp(r'\*\*(.+?)\*\*');
+    int lastEnd = 0;
+
+    for (final match in regex.allMatches(text)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: text.substring(lastEnd, match.start),
+          style: baseStyle,
+        ));
+      }
+      spans.add(TextSpan(
+        text: match.group(1),
+        style: boldStyle,
+      ));
+      lastEnd = match.end;
+    }
+    if (lastEnd < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastEnd),
+        style: baseStyle,
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isUser = message.sender == MessageSender.user;
@@ -180,10 +213,7 @@ class _MessageBubble extends StatelessWidget {
           color: isUser ? Colors.deepPurpleAccent : Colors.grey.shade200,
           borderRadius: BorderRadius.circular(18),
         ),
-        child: Text(
-          message.text,
-          style: TextStyle(color: isUser ? Colors.white : Colors.black87),
-        ),
+        child: _parseBoldText(message.text, isUser),
       ),
     );
   }
