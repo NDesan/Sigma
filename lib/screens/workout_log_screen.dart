@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/workout.dart';
@@ -5,6 +6,7 @@ import '../services/workout_service.dart';
 import '../services/ai_coach_service.dart';
 import '../widgets/coach_reaction_dialog.dart';
 import '../widgets/rest_timer_sheet.dart';
+import '../widgets/exercise_picker_sheet.dart';
 import '../services/tr.dart';
 
 class WorkoutLogScreen extends StatefulWidget {
@@ -21,7 +23,6 @@ class WorkoutLogScreen extends StatefulWidget {
 
 class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
   final List<_ExerciseDraft> _exercises = [];
-  final TextEditingController _customExerciseController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
 
   final List<String> _commonExercises = [
@@ -46,7 +47,6 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
 
   @override
   void dispose() {
-    _customExerciseController.dispose();
     _nameController.dispose();
     for (final ex in _exercises) {
       ex.nameController.dispose();
@@ -79,6 +79,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                         TextEditingController(text: set.notes ?? ''),
                   ))
               .toList(),
+          previousEntry: workoutService.getLastExerciseEntry(entry.exerciseName),
         );
         _exercises.add(exDraft);
       }
@@ -204,26 +205,57 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
     return entries;
   }
 
-  void _addQuickExercise(String name) {
+  void _addExercise(String name, {ExerciseEntry? previous}) {
     setState(() {
+      final previousSets = previous?.sets ?? const <WorkoutSet>[];
+      final sets = previousSets.isEmpty
+          ? [
+              _SetDraft(
+                weightController: TextEditingController(),
+                repsController: TextEditingController(),
+                notesController: TextEditingController(),
+              ),
+            ]
+          : previousSets
+              .map((s) => _SetDraft(
+                    weightController:
+                        TextEditingController(text: s.weightKg.toString()),
+                    repsController:
+                        TextEditingController(text: s.reps.toString()),
+                    notesController: TextEditingController(),
+                  ))
+              .toList();
       _exercises.add(_ExerciseDraft(
         nameController: TextEditingController(text: name),
-        sets: [
-          _SetDraft(
-            weightController: TextEditingController(text: ''),
-            repsController: TextEditingController(text: ''),
-            notesController: TextEditingController(),
-          ),
-        ],
+        sets: sets,
+        previousEntry: previous,
       ));
     });
+    _saveDraft();
   }
 
-  void _addCustomExercise() {
-    final name = _customExerciseController.text.trim();
-    if (name.isEmpty) return;
-    _addQuickExercise(name);
-    _customExerciseController.clear();
+  void _addQuickExercise(String name) {
+    final workoutService = context.read<WorkoutService>();
+    final previous = workoutService.getLastExerciseEntry(name);
+    _addExercise(name, previous: previous);
+  }
+
+  void _showExercisePicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1E1E2C),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => ExercisePickerSheet(
+        onSelect: (name) {
+          final workoutService = context.read<WorkoutService>();
+          final previous = workoutService.getLastExerciseEntry(name);
+          _addExercise(name, previous: previous);
+        },
+      ),
+    );
   }
 
   void _addSet(_ExerciseDraft exercise) {
@@ -239,7 +271,7 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
     });
   }
 
-  void _showRestTimer() {
+  void _showRestTimer({bool autoStart = false, int duration = 60}) {
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1E1E2C),
@@ -247,7 +279,10 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => const RestTimerSheet(),
+      builder: (ctx) => RestTimerSheet(
+        initialDuration: duration,
+        autoStart: autoStart,
+      ),
     );
   }
 
@@ -262,9 +297,9 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
       return;
     }
 
+    final workoutService = context.read<WorkoutService>();
     await _saveMetadata();
     final endTime = _endDateTime ?? DateTime.now();
-    final workoutService = context.read<WorkoutService>();
 
     await _saveDraft();
     final session = await workoutService.endActiveSession(endTime: endTime);
@@ -358,6 +393,26 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
             children: [
               _buildWorkoutMetadataCard(),
               const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _showExercisePicker,
+                  icon: const Icon(Icons.add),
+                  label: Text(
+                    context.tr('addExercise'),
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.deepPurpleAccent,
+                    side: const BorderSide(color: Colors.deepPurpleAccent),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               Text(
                 context.tr('quickAddExercise'),
                 style: TextStyle(
@@ -380,40 +435,6 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                     onPressed: () => _addQuickExercise(exName),
                   );
                 }).toList(),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _customExerciseController,
-                      style:
-                          const TextStyle(color: Colors.white, fontSize: 14),
-                      decoration: InputDecoration(
-                        hintText: context.tr('customExerciseName'),
-                        hintStyle: const TextStyle(color: Colors.grey),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E2C),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 10),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      onSubmitted: (_) => _addCustomExercise(),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: _addCustomExercise,
-                    icon: const Icon(Icons.add),
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.deepPurpleAccent,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
               ),
               const SizedBox(height: 20),
               ListView.builder(
@@ -591,42 +612,30 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
               ],
             ),
             const Divider(color: Colors.white10),
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: 4.0),
-              child: Row(
-                children: [
-                  SizedBox(
-                      width: 32,
-                      child: Text(context.tr('sets'),
-                          style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold))),
-                  Expanded(
-                      flex: 2,
-                      child: Text(context.tr('kg'),
-                          style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold))),
-                  Expanded(
-                      flex: 2,
-                      child: Text(context.tr('repsAbbr'),
-                          style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold))),
-                  Expanded(
-                      flex: 3,
-                      child: Text(context.tr('notes'),
-                          style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold))),
-                  SizedBox(width: 32),
-                ],
+            if (ex.previousEntry != null) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.history,
+                        color: Colors.greenAccent, size: 14),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        context.tr('lastSessionHint', [
+                          '${ex.previousEntry!.sets.length}',
+                          ex.previousEntry!.maxWeight.toStringAsFixed(1),
+                        ]),
+                        style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
             Column(
               children: List.generate(ex.sets.length, (setIndex) {
                 final setDraft = ex.sets[setIndex];
@@ -661,92 +670,216 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
 
   Widget _buildSetRow(
       _ExerciseDraft ex, _SetDraft setDraft, int setIndex) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 32,
+    final prevSet = ex.previousEntry != null &&
+            setIndex < ex.previousEntry!.sets.length
+        ? ex.previousEntry!.sets[setIndex]
+        : null;
+
+    final weight = double.tryParse(setDraft.weightController.text) ?? 0.0;
+    final reps = int.tryParse(setDraft.repsController.text) ?? 0;
+    final volume = weight * reps;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Dismissible(
+          key: ValueKey('set-${setDraft.id}'),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 16),
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withOpacity(0.85),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.delete_outline, color: Colors.white),
+          ),
+          onDismissed: (_) {
+            setState(() {
+              ex.sets.removeAt(setIndex);
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 36,
+                  child: Text(
+                    context.tr('setPrefix', [(setIndex + 1).toString()]),
+                    style: const TextStyle(
+                        color: Colors.deepPurpleAccent,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13),
+                  ),
+                ),
+                _StepperInput(
+                  controller: setDraft.weightController,
+                  step: 2.5,
+                  decimals: 1,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(width: 6),
+                _StepperInput(
+                  controller: setDraft.repsController,
+                  step: 1,
+                  decimals: 0,
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 44,
+                  child: Text(
+                    volume > 0
+                        ? '${volume.toStringAsFixed(0)}${context.tr('kg')}'
+                        : '-',
+                    style: const TextStyle(
+                        color: Colors.white38, fontSize: 11),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.timer_outlined,
+                      color: Colors.deepPurpleAccent, size: 20),
+                  tooltip: context.tr('restTimer'),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => _showRestTimer(autoStart: true),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.grey, size: 18),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () {
+                    setState(() {
+                      ex.sets.removeAt(setIndex);
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (prevSet != null)
+          Padding(
+            padding: const EdgeInsets.only(left: 40, top: 2),
             child: Text(
-              context.tr('setPrefix', [(setIndex + 1).toString()]),
-              style: const TextStyle(
-                  color: Colors.deepPurpleAccent,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13),
+              '${context.tr('prev')} ${prevSet.weightKg.toStringAsFixed(1)}${context.tr('kg')} × ${prevSet.reps}',
+              style: const TextStyle(color: Colors.white24, fontSize: 10),
             ),
           ),
-          Expanded(
-            flex: 2,
-            child: TextField(
-              controller: setDraft.weightController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.black26,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide.none),
-                isDense: true,
-              ),
+        Padding(
+          padding: const EdgeInsets.only(left: 40, top: 4),
+          child: TextField(
+            controller: setDraft.notesController,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+            decoration: InputDecoration(
+              hintText: context.tr('notes'),
+              hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+              filled: true,
+              fillColor: Colors.black26,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide.none),
+              isDense: true,
             ),
           ),
-          const SizedBox(width: 6),
-          Expanded(
-            flex: 2,
-            child: TextField(
-              controller: setDraft.repsController,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.black26,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide.none),
-                isDense: true,
-              ),
+        ),
+        const SizedBox(height: 6),
+      ],
+    );
+  }
+}
+
+class _StepperInput extends StatelessWidget {
+  final TextEditingController controller;
+  final double step;
+  final int decimals;
+  final ValueChanged<String> onChanged;
+
+  const _StepperInput({
+    required this.controller,
+    required this.step,
+    required this.decimals,
+    required this.onChanged,
+  });
+
+  void _adjust(double delta) {
+    final raw = controller.text.trim().replaceAll(',', '.');
+    final current = double.tryParse(raw) ?? 0.0;
+    var next = current + delta;
+    if (decimals == 0) {
+      next = next.roundToDouble();
+    }
+    next = math.max(0.0, next);
+    final text = decimals == 0
+        ? next.round().toString()
+        : next.toStringAsFixed(decimals);
+    controller.text = text;
+    onChanged(text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _StepButton(
+          icon: Icons.remove,
+          onPressed: () => _adjust(-step),
+        ),
+        SizedBox(
+          width: 46,
+          child: TextField(
+            controller: controller,
+            keyboardType: decimals == 0
+                ? TextInputType.number
+                : const TextInputType.numberWithOptions(decimal: true),
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.black26,
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 2, vertical: 12),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: BorderSide.none),
             ),
+            onChanged: (_) => onChanged(controller.text),
           ),
-          const SizedBox(width: 6),
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: setDraft.notesController,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
-              decoration: InputDecoration(
-                hintText: context.tr('optional'),
-                hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
-                filled: true,
-                fillColor: Colors.black26,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide.none),
-                isDense: true,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 32,
-            child: IconButton(
-              icon: const Icon(Icons.close, color: Colors.grey, size: 16),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () {
-                setState(() {
-                  ex.sets.removeAt(setIndex);
-                });
-              },
-            ),
-          ),
-        ],
+        ),
+        _StepButton(
+          icon: Icons.add,
+          onPressed: () => _adjust(step),
+        ),
+      ],
+    );
+  }
+}
+
+class _StepButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _StepButton({required this.icon, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        width: 28,
+        height: 38,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Colors.black26,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, color: Colors.deepPurpleAccent, size: 16),
       ),
     );
   }
@@ -755,10 +888,12 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
 class _ExerciseDraft {
   final TextEditingController nameController;
   final List<_SetDraft> sets;
+  final ExerciseEntry? previousEntry;
 
   _ExerciseDraft({
     required this.nameController,
     required this.sets,
+    this.previousEntry,
   });
 }
 
@@ -766,10 +901,13 @@ class _SetDraft {
   final TextEditingController weightController;
   final TextEditingController repsController;
   final TextEditingController notesController;
+  final int id;
 
   _SetDraft({
     required this.weightController,
     required this.repsController,
     required this.notesController,
-  });
+  }) : id = _setIdCounter++;
 }
+
+int _setIdCounter = 0;
