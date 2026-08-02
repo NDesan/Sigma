@@ -92,6 +92,7 @@ class CoachApp extends StatelessWidget {
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
           ],
           theme: ThemeData(
             useMaterial3: true,
