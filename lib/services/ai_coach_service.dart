@@ -128,7 +128,7 @@ class AiCoachService {
   /// Interactive Coach Chat Response
   Future<String> respond(String userMessage, UserProfile profile,
       {List<CoachMessage> history = const [], CoachPersonality personality = CoachPersonality.aggressive}) async {
-    if (useRemoteApi && apiUrl != null) {
+    if (useRemoteApi && apiUrl != null && apiKey != null && apiKey!.trim().isNotEmpty) {
       try {
         return await _respondViaApi(userMessage, profile, history, personality);
       } catch (_) {

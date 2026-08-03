@@ -15,7 +15,11 @@ import 'services/ai_coach_service.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: '.env');
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // .env file optional or missing
+  }
 
   final translationService = TranslationService();
   await translationService.load();
@@ -32,10 +36,13 @@ Future<void> main() async {
   final workoutService = WorkoutService();
   await workoutService.load();
 
+  final apiKey = dotenv.isInitialized ? dotenv.env['MISTRAL_API_KEY'] : null;
+  final hasApiKey = apiKey != null && apiKey.trim().isNotEmpty;
+
   final aiCoachService = AiCoachService(
-    useRemoteApi: true,
+    useRemoteApi: hasApiKey,
     apiUrl: 'https://api.mistral.ai/v1/chat/completions',
-    apiKey: dotenv.env['MISTRAL_API_KEY'] ?? '',
+    apiKey: hasApiKey ? apiKey : null,
   );
 
   final coachSettingsService = CoachSettingsService();
