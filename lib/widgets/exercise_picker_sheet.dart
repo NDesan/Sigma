@@ -47,6 +47,9 @@ class _ExercisePickerSheetState extends State<ExercisePickerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -60,7 +63,7 @@ class _ExercisePickerSheetState extends State<ExercisePickerSheet> {
               height: 4,
               margin: const EdgeInsets.only(top: 12),
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.3),
+                color: theme.hintColor.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -71,7 +74,6 @@ class _ExercisePickerSheetState extends State<ExercisePickerSheet> {
                   Text(
                     context.tr('addExercise'),
                     style: const TextStyle(
-                      color: Colors.white,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.1,
                       fontSize: 16,
@@ -79,7 +81,7 @@ class _ExercisePickerSheetState extends State<ExercisePickerSheet> {
                   ),
                   const Spacer(),
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.grey),
+                    icon: Icon(Icons.close, color: theme.hintColor),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -89,14 +91,14 @@ class _ExercisePickerSheetState extends State<ExercisePickerSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: TextField(
                 controller: _searchController,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: const TextStyle(fontSize: 14),
                 decoration: InputDecoration(
                   hintText: context.tr('searchExercises'),
-                  hintStyle: const TextStyle(color: Colors.grey),
-                  prefixIcon: const Icon(Icons.search,
-                      color: Colors.grey, size: 20),
+                  hintStyle: TextStyle(color: theme.hintColor),
+                  prefixIcon: Icon(Icons.search,
+                      color: theme.hintColor, size: 20),
                   filled: true,
-                  fillColor: Colors.black26,
+                  fillColor: isDark ? Colors.black26 : Colors.grey.shade200,
                   contentPadding:
                       const EdgeInsets.symmetric(vertical: 12),
                   border: OutlineInputBorder(
@@ -136,7 +138,7 @@ class _ExercisePickerSheetState extends State<ExercisePickerSheet> {
                   ? Center(
                       child: Text(
                         context.tr('noResults'),
-                        style: const TextStyle(color: Colors.white38),
+                        style: TextStyle(color: theme.hintColor.withOpacity(0.6)),
                       ),
                     )
                   : ListView(
@@ -174,19 +176,24 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? Colors.deepPurpleAccent : Colors.black26,
+          color: selected
+              ? Colors.deepPurpleAccent
+              : (isDark ? Colors.black26 : Colors.grey.shade200),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? Colors.white : Colors.grey,
+            color: selected ? Colors.white : theme.hintColor,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -209,7 +216,7 @@ class _CustomExerciseTile extends StatelessWidget {
           color: Colors.deepPurpleAccent),
       title: Text(
         '${context.tr('customExerciseName')}: $name',
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        style: const TextStyle(fontSize: 14),
       ),
       onTap: onTap,
     );
@@ -238,7 +245,7 @@ class _ExerciseTile extends StatelessWidget {
       ),
       title: Text(
         exercise.name,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        style: const TextStyle(fontSize: 14),
       ),
       trailing: previous != null
           ? _PreviousBadge(previous: previous)

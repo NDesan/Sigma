@@ -75,6 +75,9 @@ class _RestTimerSheetState extends State<RestTimerSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -89,15 +92,15 @@ class _RestTimerSheetState extends State<RestTimerSheet> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.3),
+              color: theme.hintColor.withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "REST TIMER",
             style: TextStyle(
-              color: Colors.white,
+              color: theme.textTheme.titleMedium?.color,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.1,
             ),
@@ -112,9 +115,9 @@ class _RestTimerSheetState extends State<RestTimerSheet> {
                   label: Text("${dur}s"),
                   selected: selected,
                   selectedColor: Colors.deepPurpleAccent,
-                  backgroundColor: Colors.black26,
+                  backgroundColor: isDark ? Colors.black26 : Colors.grey.shade200,
                   labelStyle: TextStyle(
-                    color: selected ? Colors.white : Colors.grey,
+                    color: selected ? Colors.white : theme.hintColor,
                     fontWeight: FontWeight.bold,
                   ),
                   onSelected: (val) {
@@ -135,7 +138,7 @@ class _RestTimerSheetState extends State<RestTimerSheet> {
                       ? (_remaining / _selectedDuration)
                       : (_isComplete ? 1.0 : 0.0),
                   strokeWidth: 12,
-                  backgroundColor: Colors.white10,
+                  backgroundColor: isDark ? Colors.white10 : Colors.black12,
                   color: _isComplete ? Colors.green : Colors.deepPurpleAccent,
                 ),
                 Text(
@@ -143,7 +146,7 @@ class _RestTimerSheetState extends State<RestTimerSheet> {
                       ? "DONE!"
                       : (_isRunning ? "${_remaining}s" : "${_selectedDuration}s"),
                   style: TextStyle(
-                    color: _isComplete ? Colors.green : Colors.white,
+                    color: _isComplete ? Colors.green : theme.textTheme.bodyLarge?.color,
                     fontSize: _isComplete ? 22 : 32,
                     fontWeight: FontWeight.bold,
                   ),

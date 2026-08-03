@@ -32,7 +32,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final screens = [
       _CoachHomeTab(notificationService: widget.notificationService),
       const ChatScreen(),
-      const ProgressScreen(),
+      const HistoryScreen(),
       const ProfileScreen(),
     ];
 
@@ -157,29 +157,6 @@ class _CoachHomeTab extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       elevation: 4,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // History Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (ctx) => const HistoryScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.history),
-                    label: Text(context.tr('history')),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
                     ),
                   ),
                 ),

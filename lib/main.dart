@@ -104,7 +104,14 @@ class CoachApp extends StatelessWidget {
           theme: ThemeData(
             useMaterial3: true,
             colorSchemeSeed: Colors.deepPurpleAccent,
+            brightness: Brightness.light,
           ),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorSchemeSeed: Colors.deepPurpleAccent,
+            brightness: Brightness.dark,
+          ),
+          themeMode: ThemeMode.system,
           home: HomeScreen(notificationService: notificationService),
         ),
       ),

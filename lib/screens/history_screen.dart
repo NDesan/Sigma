@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/workout.dart';
 import '../services/workout_service.dart';
+import '../services/tr.dart';
 import 'workout_detail_screen.dart';
 
 class HistoryScreen extends StatelessWidget {
@@ -12,34 +13,34 @@ class HistoryScreen extends StatelessWidget {
     final workoutService = context.watch<WorkoutService>();
     final sessions = workoutService.sessions;
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF12121D),
       appBar: AppBar(
-        title: const Text(
-          "WORKOUT HISTORY",
-          style: TextStyle(
+        title: Text(
+          context.tr('history').toUpperCase(),
+          style: const TextStyle(
               fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 18),
         ),
-        backgroundColor: const Color(0xFF1E1E2C),
-        foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: sessions.isEmpty
-          ? const Center(
+          ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.fitness_center_outlined,
-                      size: 64, color: Colors.white24),
-                  SizedBox(height: 16),
+                      size: 64, color: theme.hintColor.withOpacity(0.4)),
+                  const SizedBox(height: 16),
                   Text(
-                    "No workouts logged yet",
-                    style: TextStyle(color: Colors.white38, fontSize: 16),
+                    context.tr('noWorkoutsYet'),
+                    style: TextStyle(color: theme.hintColor, fontSize: 16),
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
-                    "Complete your first workout to see it here",
-                    style: TextStyle(color: Colors.white24, fontSize: 13),
+                    context.tr('startFirstWorkout'),
+                    style: TextStyle(color: theme.hintColor.withOpacity(0.6), fontSize: 13),
                   ),
                 ],
               ),
@@ -88,9 +89,10 @@ class _WorkoutHistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasEndTime = session.endTime != null;
     final duration = hasEndTime ? session.duration : null;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Card(
-      color: const Color(0xFF1E1E2C),
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
@@ -111,12 +113,12 @@ class _WorkoutHistoryCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.deepPurpleAccent.withOpacity(0.2),
+                  color: theme.colorScheme.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.fitness_center,
-                  color: Colors.deepPurpleAccent,
+                  color: theme.colorScheme.primary,
                   size: 24,
                 ),
               ),
@@ -128,7 +130,6 @@ class _WorkoutHistoryCard extends StatelessWidget {
                     Text(
                       _formatDate(session.dateTime),
                       style: const TextStyle(
-                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
                       ),
@@ -152,13 +153,13 @@ class _WorkoutHistoryCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       'Total volume: ${session.totalVolume.toStringAsFixed(0)} kg',
-                      style: const TextStyle(
-                          color: Colors.white38, fontSize: 12),
+                      style: TextStyle(
+                          color: theme.hintColor, fontSize: 12),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.white24),
+              Icon(Icons.chevron_right, color: theme.hintColor.withOpacity(0.5)),
             ],
           ),
         ),

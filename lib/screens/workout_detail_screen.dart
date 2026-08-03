@@ -33,17 +33,15 @@ class WorkoutDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasEndTime = session.endTime != null;
     final duration = hasEndTime ? session.duration : null;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF12121D),
       appBar: AppBar(
         title: Text(
           _formatDateTime(session.dateTime),
           style: const TextStyle(
               fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        backgroundColor: const Color(0xFF1E1E2C),
-        foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -51,35 +49,33 @@ class WorkoutDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E2C),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  _InfoTile(
-                    icon: Icons.timer_outlined,
-                    label: 'Duration',
-                    value: duration != null
-                        ? _formatDuration(duration)
-                        : 'N/A',
-                  ),
-                  const SizedBox(width: 24),
-                  _InfoTile(
-                    icon: Icons.fitness_center,
-                    label: 'Exercises',
-                    value: '${session.exercises.length}',
-                  ),
-                  const SizedBox(width: 24),
-                  _InfoTile(
-                    icon: Icons.monitor_weight_outlined,
-                    label: 'Total Vol.',
-                    value:
-                        '${session.totalVolume.toStringAsFixed(0)} kg',
-                  ),
-                ],
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    _InfoTile(
+                      icon: Icons.timer_outlined,
+                      label: 'Duration',
+                      value: duration != null
+                          ? _formatDuration(duration)
+                          : 'N/A',
+                    ),
+                    const SizedBox(width: 24),
+                    _InfoTile(
+                      icon: Icons.fitness_center,
+                      label: 'Exercises',
+                      value: '${session.exercises.length}',
+                    ),
+                    const SizedBox(width: 24),
+                    _InfoTile(
+                      icon: Icons.monitor_weight_outlined,
+                      label: 'Total Vol.',
+                      value:
+                          '${session.totalVolume.toStringAsFixed(0)} kg',
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -105,21 +101,21 @@ class _InfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.deepPurpleAccent, size: 20),
+          Icon(icon, color: theme.colorScheme.primary, size: 20),
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(color: Colors.grey, fontSize: 11),
+            style: TextStyle(color: theme.hintColor, fontSize: 11),
           ),
           const SizedBox(height: 2),
           Text(
             value,
             style: const TextStyle(
-              color: Colors.white,
               fontWeight: FontWeight.bold,
               fontSize: 15,
             ),
@@ -137,8 +133,9 @@ class _ExerciseDetailCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Card(
-      color: const Color(0xFF1E1E2C),
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -149,7 +146,6 @@ class _ExerciseDetailCard extends StatelessWidget {
             Text(
               entry.exerciseName,
               style: const TextStyle(
-                color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 17,
               ),
@@ -172,35 +168,35 @@ class _ExerciseDetailCard extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(color: Colors.white10),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 4),
+            Divider(color: theme.dividerColor),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
                   SizedBox(
                       width: 32,
                       child: Text("SET",
                           style: TextStyle(
-                              color: Colors.grey,
+                              color: theme.hintColor,
                               fontSize: 11,
                               fontWeight: FontWeight.bold))),
                   Expanded(
                       child: Text("KG",
                           style: TextStyle(
-                              color: Colors.grey,
+                              color: theme.hintColor,
                               fontSize: 11,
                               fontWeight: FontWeight.bold))),
                   Expanded(
                       child: Text("REPS",
                           style: TextStyle(
-                              color: Colors.grey,
+                              color: theme.hintColor,
                               fontSize: 11,
                               fontWeight: FontWeight.bold))),
                   Expanded(
                       flex: 2,
                       child: Text("NOTES",
                           style: TextStyle(
-                              color: Colors.grey,
+                              color: theme.hintColor,
                               fontSize: 11,
                               fontWeight: FontWeight.bold))),
                 ],
@@ -216,8 +212,8 @@ class _ExerciseDetailCard extends StatelessWidget {
                       width: 32,
                       child: Text(
                         "#${index + 1}",
-                        style: const TextStyle(
-                          color: Colors.deepPurpleAccent,
+                        style: TextStyle(
+                          color: theme.colorScheme.primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),
@@ -226,15 +222,13 @@ class _ExerciseDetailCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         '${set.weightKg.toStringAsFixed(1)}',
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 14),
+                        style: const TextStyle(fontSize: 14),
                       ),
                     ),
                     Expanded(
                       child: Text(
                         set.reps.toString(),
-                        style: const TextStyle(
-                            color: Colors.white, fontSize: 14),
+                        style: const TextStyle(fontSize: 14),
                       ),
                     ),
                     Expanded(
@@ -243,8 +237,8 @@ class _ExerciseDetailCard extends StatelessWidget {
                         set.notes ?? '',
                         style: TextStyle(
                           color: set.notes != null && set.notes!.isNotEmpty
-                              ? Colors.white54
-                              : Colors.white24,
+                              ? theme.textTheme.bodyMedium?.color?.withOpacity(0.7)
+                              : theme.hintColor.withOpacity(0.5),
                           fontSize: 13,
                           fontStyle: set.notes != null && set.notes!.isNotEmpty
                               ? FontStyle.normal
@@ -270,16 +264,18 @@ class _StatBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.deepPurpleAccent.withOpacity(0.15),
+        color: theme.colorScheme.primary.withOpacity(0.15),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Colors.deepPurpleAccent,
+        style: TextStyle(
+          color: theme.colorScheme.primary,
           fontSize: 11,
           fontWeight: FontWeight.bold,
         ),

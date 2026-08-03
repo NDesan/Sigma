@@ -352,7 +352,6 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
         if (context.mounted) Navigator.of(context).pop();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFF12121D),
         appBar: AppBar(
           title: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,15 +367,13 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
               ),
               Text(
                 _formatDateTime(_workoutDateTime),
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey,
+                    color: Theme.of(context).hintColor,
                     fontWeight: FontWeight.normal),
               ),
             ],
           ),
-          backgroundColor: const Color(0xFF1E1E2C),
-          foregroundColor: Colors.white,
           elevation: 0,
           actions: [
             IconButton(
@@ -429,9 +426,8 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                 children: _commonExercises.map((exName) {
                   return ActionChip(
                     label: Text(context.tr(_exerciseKey(exName))),
-                    backgroundColor: const Color(0xFF1E1E2C),
-                    labelStyle: const TextStyle(
-                        color: Colors.deepPurpleAccent, fontSize: 12),
+                    labelStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.primary, fontSize: 12),
                     onPressed: () => _addQuickExercise(exName),
                   );
                 }).toList(),
@@ -475,8 +471,9 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
   }
 
   Widget _buildWorkoutMetadataCard() {
+    final theme = Theme.of(context);
+
     return Card(
-      color: const Color(0xFF1E1E2C),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -486,13 +483,12 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
             TextField(
               controller: _nameController,
               style: const TextStyle(
-                color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
               ),
               decoration: InputDecoration(
                 hintText: context.tr('workoutName'),
-                hintStyle: TextStyle(color: Colors.grey),
+                hintStyle: TextStyle(color: theme.hintColor),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
               ),
@@ -532,6 +528,8 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
     required String label,
     required VoidCallback onTap,
   }) {
+    final theme = Theme.of(context);
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -539,14 +537,14 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
-            Icon(icon, color: Colors.deepPurpleAccent, size: 16),
+            Icon(icon, color: theme.colorScheme.primary, size: 16),
             const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: const TextStyle(fontSize: 14),
             ),
             const Spacer(),
-            const Icon(Icons.edit, color: Colors.grey, size: 14),
+            Icon(Icons.edit, color: theme.hintColor, size: 14),
           ],
         ),
       ),
@@ -574,8 +572,9 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
   }
 
   Widget _buildExerciseCard(_ExerciseDraft ex, int exIndex) {
+    final theme = Theme.of(context);
+
     return Card(
-      color: const Color(0xFF1E1E2C),
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
@@ -589,13 +588,12 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
                   child: TextField(
                     controller: ex.nameController,
                     style: const TextStyle(
-                      color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
                     ),
                     decoration: InputDecoration(
                       hintText: context.tr('exerciseName'),
-                      hintStyle: const TextStyle(color: Colors.grey),
+                      hintStyle: TextStyle(color: theme.hintColor),
                       border: InputBorder.none,
                     ),
                   ),
@@ -771,12 +769,14 @@ class _WorkoutLogScreenState extends State<WorkoutLogScreen> {
           padding: const EdgeInsets.only(left: 40, top: 4),
           child: TextField(
             controller: setDraft.notesController,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
+            style: const TextStyle(fontSize: 12),
             decoration: InputDecoration(
               hintText: context.tr('notes'),
-              hintStyle: const TextStyle(color: Colors.grey, fontSize: 12),
+              hintStyle: TextStyle(color: Theme.of(context).hintColor, fontSize: 12),
               filled: true,
-              fillColor: Colors.black26,
+              fillColor: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black26
+                  : Colors.grey.shade200,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               border: OutlineInputBorder(
